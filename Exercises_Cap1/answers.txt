@@ -3,3 +3,6 @@
 	hello
 1.1.3)
 	2 (c2 em copiaConta() e a conta original c1 criada na main())
+1.1.10)
+	Não, pois os variáveis da classe Point2D (x e y) são
+	publicos, mas deveriam ser privados.
