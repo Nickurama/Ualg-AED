@@ -15,8 +15,8 @@ public class Main {
     {
         String[] a = {"isto","é","uma","lista","de","palavras","a","baralhar"};
         sattoloShuffle(a);
-        for (int i = 0; i < a.length; i++)
-            System.out.println(a[i]);
+        for (String s : a)
+            System.out.println(s);
     }
 
     public static void sattoloShuffle(Object[] a) {
@@ -24,8 +24,8 @@ public class Main {
         for (int i = n; i > 1; i--) {
             // choose index uniformly in [0, i-1[
             int r = (int) (Math.random() * (i-1));
-            Object swap = a[r-1];
-            a[r-1] = a[i-1];
+            Object swap = a[r];
+            a[r] = a[i-1];
             a[i-1] = swap;
         }
     }
