@@ -1,12 +1,36 @@
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.function.Predicate;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args)
     {
         //testFactorials();
         //testLists();
-        testRandom();
+        //testRandom();
+        testFile();
+    }
+
+    // File
+
+    public static void testFile()
+    {
+        try
+        {
+            File file = new File("csvFile.csv");
+            Scanner reader = new Scanner(file);
+            while(reader.hasNextLine())
+            {
+                String line = reader.nextLine();
+                String[] tokens = line.split(",");
+                System.out.println(tokens[1]); //prints second token
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("File not found.");
+        }
     }
 
     // Random
@@ -66,7 +90,7 @@ public class Main {
 
     public static List<Integer> filterList(List<Integer> list)
     {
-        List<Integer> result = new LinkedList<Integer>();
+        List<Integer> result = new LinkedList<>();
         for (int n : list)
             if (n < 10)
                 result.add(n);
@@ -75,7 +99,7 @@ public class Main {
 
     public static <T> List<T> filterList(List<T> list, Predicate<T> predicate)
     {
-        List<T> result = new LinkedList<T>();
+        List<T> result = new LinkedList<>();
         for (T n : list)
             if (predicate.test(n))
                 result.add(n);
