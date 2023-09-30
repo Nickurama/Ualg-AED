@@ -7,13 +7,26 @@ import java.util.Scanner;
 
 public class SubmissionUtils
 {
-    public static Submission parseSubmission(String line)
+    public static Submission parseSubmission(String line) throws IllegalArgumentException
     {
-        
         //dica: usar este formatador para fazer a leitura do tempo. Ver método estático parse da classe LocalDateTime
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
-        //TODO: implement
-		return null;
+        String[] tokens = line.split("\t");
+        Submission result;
+
+        try
+        {
+            result = new Submission(Integer.parseInt(tokens[0]), LocalDateTime.parse(tokens[1], formatter),
+                    Integer.parseInt(tokens[2]),tokens[3], tokens[4],
+                    tokens[5], tokens[6], tokens[7],
+                    Result.parseSubmissionResult(tokens[8]), State.parseSubmissionState(tokens[9]));
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("Error parsing submission: " + e);
+        }
+
+		return result;
     }
 
     public static List<Submission> readSubmissionsFromFile(String fileName)

@@ -133,12 +133,9 @@ public class Submission {
         return "<" + obj.toString() + ">";
     }
 
-    //Escreve a informação completa de uma submissão numa única string, e retorna essa string
-    //os campos da submissão estão separados por tab ('\t')
     //<número submissão><tempo><pontos><grupo><id da equipa><nome da equipa><problema><linguagem><resultado><estado>
     public String toTabString()
     {
-        //dica: usar este formatador para imprimir o tempo para o ecrâ, ver método format da classe LocalDateTime
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
         String timeSubmittedFormatted = formatter.format(this.timeSubmitted);
 
