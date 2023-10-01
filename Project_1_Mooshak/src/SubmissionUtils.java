@@ -56,7 +56,7 @@ public class SubmissionUtils
                 list.add(parseSubmission(line));
             } catch (Exception e)
             {
-                System.out.println("Line didn't have a valid submission.");
+                //System.out.println("Line didn't have a valid submission.");
             }
         }
     }
@@ -86,7 +86,9 @@ public class SubmissionUtils
 
     public static void printSubmissions(List<Submission> submissions, int n)
     {
-        // TODO: implement
+        Iterator<Submission> itr = submissions.iterator();
+        for (int i = 0; i < n && itr.hasNext(); i++)
+            System.out.println(itr.next().toString());
     }
 
     public static List<Submission> filterByProblem(List<Submission> submissions, String problem)
