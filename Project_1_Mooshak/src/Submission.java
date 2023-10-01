@@ -1,9 +1,11 @@
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class Submission {
+public class Submission
+{
 
-    //fields
+    // fields
+
     private Integer number;
     private Integer points;
     private LocalDateTime timeSubmitted;
@@ -15,25 +17,25 @@ public class Submission {
     private Result result;
     private State state;
 
-    //methods
- 
-    public Submission(int numero, LocalDateTime tempo, int pontos, String grupo,
-                      String idEquipa, String nomeEquipa, String problema,
-                      String linguagem, Result resultado, State estado)
+    // methods
+
+    public Submission(int number, LocalDateTime timeSubmitted,
+        int points, String group, String teamID, String teamName,
+        String problem, String language, Result result, State state)
     {
-        this.number = numero;
-        this.points = pontos;
-        this.timeSubmitted = tempo;
-        this.group = grupo;
-        this.teamID = idEquipa;
-        this.teamName = nomeEquipa;
-        this.problem = problema;
-        this.language = linguagem;
-        this.result = resultado;
-        this.state = estado;
+        this.number = number;
+        this.points = points;
+        this.timeSubmitted = timeSubmitted;
+        this.group = group;
+        this.teamID = teamID;
+        this.teamName = teamName;
+        this.problem = problem;
+        this.language = language;
+        this.result = result;
+        this.state = state;
     }
 
-    
+
     public int getNumero()
     {
         return this.number;
@@ -44,49 +46,49 @@ public class Submission {
         return this.timeSubmitted;
     }
 
-    public int getPontos() 
-	{ 
-		return this.points;
-	}
+    public int getPontos()
+    {
+        return this.points;
+    }
 
     public String getGrupo()
-	{
-		return this.group;
-	}
+    {
+        return this.group;
+    }
 
     public String getIdEquipa()
     {
         return this.teamID;
     }
 
-    public String getNomeEquipa() 
-	{ 
-		return this.teamName;
-	}
+    public String getNomeEquipa()
+    {
+        return this.teamName;
+    }
 
-    public String getProblema() 
-	{
+    public String getProblema()
+    {
         return this.problem;
     }
 
-    public String getLinguagem() 
-	{
+    public String getLinguagem()
+    {
         return this.language;
     }
 
-    public Result getResultado() 
-	{
-        return this.result;
-	}
-
-    public State getEstado() 
-	{
-        return this.state;
-	}
-
-    public void update(int pontos)
+    public Result getResultado()
     {
-        this.points = pontos;
+        return this.result;
+    }
+
+    public State getEstado()
+    {
+        return this.state;
+    }
+
+    public void update(int points)
+    {
+        this.points = points;
         this.result = Result.ACCEPTED;
         this.state = State.FINAL;
     }
@@ -102,7 +104,7 @@ public class Submission {
     }
 
     @Override
-    //<número submissão>,<tempo>,<pontos>,<id da equipa>,<problema>,<resultado>,<estado>
+    // <número submissão>,<tempo>,<pontos>,<id da equipa>,<problema>,<resultado>,<estado>
     public String toString()
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
@@ -112,7 +114,7 @@ public class Submission {
                 this.points, this.teamID, this.problem,
                 this.result, this.state};
 
-		return enumerateVars(varsToPrint, ",");
+        return enumerateVars(varsToPrint, ",");
     }
 
     private static String enumerateVars(Object[] vars, String separator)
@@ -133,7 +135,7 @@ public class Submission {
         return "<" + obj.toString() + ">";
     }
 
-    //<número submissão><tempo><pontos><grupo><id da equipa><nome da equipa><problema><linguagem><resultado><estado>
+    // <número submissão><tempo><pontos><grupo><id da equipa><nome da equipa><problema><linguagem><resultado><estado>
     public String toTabString()
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
@@ -144,7 +146,7 @@ public class Submission {
                 this.teamName, this.problem, this.language,
                 this.result, this.state};
 
-		return enumerateVars(varsToPrint, "\t");
+        return enumerateVars(varsToPrint, "\t");
     }
 }
 
