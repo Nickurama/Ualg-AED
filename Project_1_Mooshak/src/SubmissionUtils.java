@@ -85,6 +85,11 @@ public class SubmissionUtils
         submissions.sort((a, b) -> a.compareTo(b));
     }
 
+    public static void sortSubmissionsByProblemAlphabetic(List<Submission> submissions)
+    {
+        submissions.sort((a, b) -> a.getProblema().compareTo(b.getProblema()));
+    }
+
     public static void printSubmissions(List<Submission> submissions, int n)
     {
         Iterator<Submission> itr = submissions.iterator();
@@ -106,6 +111,11 @@ public class SubmissionUtils
         return filterSubmissions(submissions, a -> problem.equals(a.getProblema()));
     }
 
+    public static List<Submission> filterByTeamName(List<Submission> submissions, String teamName)
+    {
+        return filterSubmissions(submissions, a -> teamName.equals(a.getNomeEquipa()));
+    }
+
     public static Submission getSubmissionWithNumber(List<Submission> submissions, int submissionNumber)
     {
         for (Submission sub : submissions)
@@ -125,14 +135,47 @@ public class SubmissionUtils
 
     public static List<Submission> getBestSubmissions(List<Submission> submissions, String teamName)
     {
-        // TODO: implement
-        return null;
+        List<Submission> result = new ArrayList<Submission>();
+        List<String> uniqueProblems = getUniqueProblems(submissions);
+        List<Submission> filteredSubmissions = filterByTeamName(submissions, teamName);
+        for (String problem : uniqueProblems)
+        {
+            List<Submission> problemSubmissions = filterByProblem(filteredSubmissions, problem);
+            if (!problemSubmissions.isEmpty())
+                result.add(getBestSubmission(problemSubmissions));
+        }
+        sortSubmissionsByProblemAlphabetic(result);
+        return result;
+    }
+
+    private static List<String> getUniqueProblems(List<Submission> submissions)
+    {
+        List<String> result = new ArrayList<String>();
+        for (Submission sub : submissions)
+            if (!result.contains(sub.getProblema()))
+                result.add(sub.getProblema());
+        return result;
+    }
+
+    private static Submission getBestSubmission(List<Submission> submissions)
+    {
+        sortSubmissions(submissions);
+        Submission result = submissions.get(0);
+        for (Submission sub : submissions)
+            if ((sub.getPontos() > result.getPontos()) ||
+                (sub.getPontos() == result.getPontos() && sub.getNumero() > result.getNumero()))
+                result = sub;
+        return result;
     }
 
     public static List<String> getTeams(List<Submission> submissions)
     {
-        // TODO: implement
-        return null;
+        List<String> result = new ArrayList<String>();
+        for (Submission sub : submissions)
+            if (!result.contains(sub.getNomeEquipa()))
+                result.add(sub.getNomeEquipa());
+        result.sort((a, b) -> a.compareTo(b));
+        return result;
     }
 
     public static void testUpdate()
