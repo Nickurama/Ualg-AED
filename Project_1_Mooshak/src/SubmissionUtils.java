@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -91,21 +92,35 @@ public class SubmissionUtils
             System.out.println(itr.next().toString());
     }
 
+    public static List<Submission> filterSubmissions(List<Submission> submissions, Predicate<Submission> pred)
+    {
+        List<Submission> result = new ArrayList<Submission>();
+        for (Submission sub : submissions)
+            if (pred.test(sub))
+                result.add(sub);
+        return result;
+    }
+
     public static List<Submission> filterByProblem(List<Submission> submissions, String problem)
     {
-        // TODO: implement
-        return null;
+        return filterSubmissions(submissions, a -> problem.equals(a.getProblema()));
     }
 
     public static Submission getSubmissionWithNumber(List<Submission> submissions, int submissionNumber)
     {
-        // TODO: implement
+        for (Submission sub : submissions)
+            if (sub.getNumero() == submissionNumber)
+                return sub;
         return null;
     }
 
     public static void printProblemStats(List<Submission> submissions, String problem)
     {
-        // TODO: implement
+        List<Submission> filteredSubmissions = filterByProblem(submissions, problem);
+        Stats stats = new Stats(problem);
+        for (Submission sub : filteredSubmissions)
+            stats.increment(sub.getResultado());
+        stats.print();
     }
 
     public static List<Submission> getBestSubmissions(List<Submission> submissions, String teamName)

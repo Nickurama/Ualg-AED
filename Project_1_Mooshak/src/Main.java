@@ -6,10 +6,11 @@ public class Main
     {
         try
         {
-            List<Submission> subs;
-            subs = SubmissionUtils.readSubmissionsFromFile("exemplo_submissoes.tsv");
+            List<Submission> subs = SubmissionUtils.readSubmissionsFromFile("exemplo_submissoes.tsv");
             //SubmissionUtils.writeSubmissionsToFile("write_test.tsv", subs);
-            SubmissionUtils.printSubmissions(subs, 2);
+            //List<Submission> filtered = SubmissionUtils.filterByProblem(subs, "A");
+            //SubmissionUtils.printSubmissions(filtered, 10);
+            SubmissionUtils.printProblemStats(subs, "G");
         } catch (Exception e)
         {
             System.out.println("Error reading submissions: " + e);
