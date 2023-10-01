@@ -122,17 +122,12 @@ public class Submission
         if (vars.length == 0)
             return "";
 
-        StringBuilder builder = new StringBuilder(formatVar(vars[0]));
+        StringBuilder builder = new StringBuilder(vars[0].toString());
 
         for (int i = 1; i < vars.length; i++) // i = 1
-            builder.append(separator).append(formatVar(vars[i]));
+            builder.append(separator).append(vars[i].toString());
 
         return builder.toString();
-    }
-
-    private static String formatVar(Object obj)
-    {
-        return "<" + obj.toString() + ">";
     }
 
     // <número submissão><tempo><pontos><grupo><id da equipa><nome da equipa><problema><linguagem><resultado><estado>

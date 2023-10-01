@@ -8,8 +8,7 @@ public class Main
         {
             List<Submission> subs;
             subs = SubmissionUtils.readSubmissionsFromFile("exemplo_submissoes.tsv");
-            for (Submission sub : subs)
-                System.out.println(sub.toString());
+            SubmissionUtils.writeSubmissionsToFile("write_test.tsv", subs);
         } catch (Exception e)
         {
             System.out.println("Error reading submissions: " + e);

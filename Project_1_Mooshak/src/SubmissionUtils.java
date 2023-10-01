@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter;
 
 public class SubmissionUtils
 {
+    private static final String FILE_HEADER = "#\tTime\tPoints\tGroup\tId\tTeam\tProblem\tLanguage\tResult\tState";
+
     public static Submission parseSubmission(String line) throws IllegalArgumentException
     {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
@@ -59,14 +61,27 @@ public class SubmissionUtils
         }
     }
 
-    public static void writeSubmissionsToFile(String fileName, List<Submission> submissions)
+    public static void writeSubmissionsToFile(String fileName, List<Submission> submissions) throws IOException
     {
-        // TODO: implement
+        try
+        {
+            File file = new File(fileName);
+            FileWriter fw = new FileWriter(file);
+            BufferedWriter writer = new BufferedWriter(fw);
+            writer.write(FILE_HEADER + "\n");
+            for (Submission sub : submissions)
+                writer.write(sub.toTabString() + "\n");
+            fw.flush();
+            fw.close();
+        } catch (Exception e)
+        {
+            throw new IOException("File '" + fileName + "' could not be created: " + e);
+        }
     }
 
     public static void sortSubmissions(List<Submission> submissions)
     {
-        // TODO: implement
+        submissions.sort((a, b) -> a.compareTo(b));
     }
 
     public static void printSubmissions(List<Submission> submissions, int n)
