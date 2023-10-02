@@ -1,4 +1,5 @@
 import java.io.*;
+import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.time.LocalDateTime;
@@ -178,10 +179,78 @@ public class SubmissionUtils
         return result;
     }
 
-    public static void testUpdate()
+    public static void testUpdate() throws IOException, FileNotFoundException
     {
         InputStreamReader streamReader = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(streamReader);
+        try
+        {
+            String filename = reader.readLine() + ".tsv";
+            List<Submission> submissions = readSubmissionsFromFile(filename);
+            interactiveCommandLine(submissions);
+            writeSubmissionsToFile(filename, submissions);
+
+        } catch (Exception e)
+        {
+            System.out.println(e);
+        }
+    }
+
+    private static void interactiveCommandLine(List<Submission> submissions) throws IOException
+    {
+        InputStreamReader streamReader = new InputStreamReader(System.in);
+        BufferedReader reader = new BufferedReader(streamReader);
+        String input;
+        while ((input = reader.readLine()) != null)
+            processCommand(submissions, input);
+    }
+
+    private static void processCommand(List<Submission> submissions, String input)
+    {
+        String[] tokens = input.split(" ");
+        try
+        {
+            if (tokens[0].equals("UPDATE"))
+                if (tokens.length >= 3)
+                    updateCommand(submissions, tokens[1], tokens[2]);
+                else
+                    System.out.println("Missing args!");
+            else
+                System.out.println("Unrecognized command '" + tokens[0] + "'!");
+        } catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private static void updateCommand(List<Submission> submissions, String numberStr, String pointsStr)
+        throws InvalidParameterException
+    {
+        try
+        {
+            int number = Integer.parseInt(numberStr);
+            int points = Integer.parseInt(pointsStr);
+            Submission found = findSubmission(submissions, number);
+
+            if (found != null)
+            {
+                found.update(points);
+                System.out.println(found.toString());
+            } else
+                System.out.println("Invalid Submission!");
+
+        } catch (Exception e)
+        {
+            throw new InvalidParameterException("Invalid arguments: '" + numberStr + "' '" + pointsStr + "'.");
+        }
+    }
+
+    private static Submission findSubmission(List<Submission> submissions, int number)
+    {
+        for (Submission sub : submissions)
+            if (sub.getNumero() == number)
+                return sub;
+        return null;
     }
 }
 
