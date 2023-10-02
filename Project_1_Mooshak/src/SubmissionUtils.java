@@ -180,7 +180,8 @@ public class SubmissionUtils
 
     public static void testUpdate()
     {
-        // TODO: implement
+        InputStreamReader streamReader = new InputStreamReader(System.in);
+        BufferedReader reader = new BufferedReader(streamReader);
     }
 }
 
