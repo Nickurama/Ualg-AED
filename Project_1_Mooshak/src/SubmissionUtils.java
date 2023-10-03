@@ -42,7 +42,8 @@ public class SubmissionUtils
             fr.close();
         } catch (Exception e)
         {
-            throw new FileNotFoundException("File '" + fileName + "' does not exist: " + e);
+            //throw new FileNotFoundException("File '" + fileName + "' does not exist: " + e);
+            System.out.println(e.getMessage());
         }
 
         return result;

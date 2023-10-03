@@ -95,11 +95,14 @@ public class Submission
 
     public boolean equals(Submission that)
     {
+        if (that == null)
+            return false;
         return this.compareTo(that) == 0;
     }
 
     public int compareTo(Submission that)
     {
+
         return that.number - this.getNumero();
     }
 
