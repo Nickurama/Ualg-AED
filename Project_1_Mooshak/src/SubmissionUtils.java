@@ -195,20 +195,25 @@ public class SubmissionUtils
             List<Submission> submissions = readSubmissionsFromFile(filename);
             interactiveCommandLine(submissions);
             writeSubmissionsToFile(filename, submissions);
-
         } catch (Exception e)
         {
             System.out.println(e);
         }
     }
 
-    private static void interactiveCommandLine(List<Submission> submissions) throws IOException
+    private static void interactiveCommandLine(List<Submission> submissions)
     {
         InputStreamReader streamReader = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(streamReader);
         String input;
-        while ((input = reader.readLine()) != null)
-            processCommand(submissions, input);
+        try
+        {
+            while ((input = reader.readLine()) != null)
+                processCommand(submissions, input);
+        } catch (Exception e)
+        {
+            System.out.println(e.getMessage());
+        }
     }
 
     private static void processCommand(List<Submission> submissions, String input)
@@ -261,6 +266,7 @@ public class SubmissionUtils
 }
 
 
+//Stats class 
 class Stats
 {
     String problem;
@@ -328,7 +334,7 @@ class Stats
         System.out.println(Result.PRESENTATION_ERROR.toString() + ": " + presentationError);
         System.out.println(Result.WRONG_ANSWER.toString() + ": " + wrongAnswer);
         System.out.println(Result.MEMORY_LIMIT_EXCEEDED.toString() + ": " + memoryLimitExceeded);
-        //System.out.println(Result.TIME_LIMIT_EXCEEDED.toString() + ": " + timeLimitExceeded);
+        System.out.println(Result.TIME_LIMIT_EXCEEDED.toString() + ": " + timeLimitExceeded);
         //System.out.println(Result.RUNTIME_ERROR.toString() + ": " + runtimeError);
         System.out.println("Run Time Error" + ": " + runtimeError);
         System.out.println(Result.COMPILE_TIME_ERROR.toString() + ": " + compileTimeError);
