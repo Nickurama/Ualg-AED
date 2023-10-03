@@ -1,5 +1,4 @@
 import java.io.*;
-import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.function.Predicate;
 import java.time.LocalDateTime;
@@ -29,7 +28,7 @@ public class SubmissionUtils
         return result;
     }
 
-    public static List<Submission> readSubmissionsFromFile(String fileName) throws FileNotFoundException
+    public static List<Submission> readSubmissionsFromFile(String fileName)
     {
         List<Submission> result = new ArrayList<Submission>();
 
@@ -64,21 +63,27 @@ public class SubmissionUtils
         }
     }
 
-    public static void writeSubmissionsToFile(String fileName, List<Submission> submissions) throws IOException
+    public static void writeSubmissionsToFile(String fileName, List<Submission> submissions)
     {
         try
         {
             File file = new File(fileName);
             FileWriter fw = new FileWriter(file);
             BufferedWriter writer = new BufferedWriter(fw);
+
             writer.write(FILE_HEADER + "\n");
-            for (Submission sub : submissions)
-                writer.write(sub.toTabString() + "\n");
-            fw.flush();
-            fw.close();
+            ListIterator<Submission> submissionIterator = submissions.listIterator();
+            if (submissionIterator.hasNext())
+                writer.write(submissionIterator.next().toTabString());
+            while (submissionIterator.hasNext())
+                writer.write("\n" + submissionIterator.next().toTabString());
+
+            writer.flush();
+            writer.close();
         } catch (Exception e)
         {
-            throw new IOException("File '" + fileName + "' could not be created: " + e);
+            //throw new IOException("File '" + fileName + "' could not be created: " + e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -87,7 +92,7 @@ public class SubmissionUtils
         submissions.sort((a, b) -> a.compareTo(b));
     }
 
-    public static void sortSubmissionsByProblemAlphabetic(List<Submission> submissions)
+    private static void sortSubmissionsByProblemAlphabetic(List<Submission> submissions)
     {
         submissions.sort((a, b) -> a.getProblema().compareTo(b.getProblema()));
     }
@@ -180,13 +185,13 @@ public class SubmissionUtils
         return result;
     }
 
-    public static void testUpdate() throws IOException, FileNotFoundException
+    public static void testUpdate()
     {
         InputStreamReader streamReader = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(streamReader);
         try
         {
-            String filename = reader.readLine() + ".tsv";
+            String filename = reader.readLine();
             List<Submission> submissions = readSubmissionsFromFile(filename);
             interactiveCommandLine(submissions);
             writeSubmissionsToFile(filename, submissions);
@@ -211,7 +216,7 @@ public class SubmissionUtils
         String[] tokens = input.split(" ");
         try
         {
-            if (tokens[0].equals("UPDATE"))
+            if (tokens[0].toUpperCase().equals("UPDATE"))
                 if (tokens.length >= 3)
                     updateCommand(submissions, tokens[1], tokens[2]);
                 else
@@ -225,7 +230,6 @@ public class SubmissionUtils
     }
 
     private static void updateCommand(List<Submission> submissions, String numberStr, String pointsStr)
-        throws InvalidParameterException
     {
         try
         {
@@ -242,7 +246,8 @@ public class SubmissionUtils
 
         } catch (Exception e)
         {
-            throw new InvalidParameterException("Invalid arguments: '" + numberStr + "' '" + pointsStr + "'.");
+            //throw new InvalidParameterException("Invalid arguments: '" + numberStr + "' '" + pointsStr + "'.");
+            System.out.println("Invalid arguments: '" + numberStr + "' '" + pointsStr + "'.");
         }
     }
 
@@ -323,9 +328,10 @@ class Stats
         System.out.println(Result.PRESENTATION_ERROR.toString() + ": " + presentationError);
         System.out.println(Result.WRONG_ANSWER.toString() + ": " + wrongAnswer);
         System.out.println(Result.MEMORY_LIMIT_EXCEEDED.toString() + ": " + memoryLimitExceeded);
-        System.out.println(Result.TIME_LIMIT_EXCEEDED.toString() + ": " + timeLimitExceeded);
-        System.out.println(Result.RUNTIME_ERROR.toString() + ": " + runtimeError);
+        //System.out.println(Result.TIME_LIMIT_EXCEEDED.toString() + ": " + timeLimitExceeded);
+        //System.out.println(Result.RUNTIME_ERROR.toString() + ": " + runtimeError);
+        System.out.println("Run Time Error" + ": " + runtimeError);
         System.out.println(Result.COMPILE_TIME_ERROR.toString() + ": " + compileTimeError);
-        System.out.println("other: " + other);
+        System.out.println("Other Errors: " + other);
     }
 }
