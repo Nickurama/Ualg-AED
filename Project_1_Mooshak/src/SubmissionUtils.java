@@ -187,11 +187,12 @@ public class SubmissionUtils
 
     public static void testUpdate()
     {
-        InputStreamReader streamReader = new InputStreamReader(System.in);
-        BufferedReader reader = new BufferedReader(streamReader);
+        //InputStreamReader streamReader = new InputStreamReader(System.in);
+        //BufferedReader reader = new BufferedReader(streamReader);
+        Scanner scanner = new Scanner(System.in);
         try
         {
-            String filename = reader.readLine();
+            String filename = scanner.nextLine();
             List<Submission> submissions = readSubmissionsFromFile(filename);
             interactiveCommandLine(submissions);
             writeSubmissionsToFile(filename, submissions);
@@ -199,21 +200,23 @@ public class SubmissionUtils
         {
             System.out.println(e);
         }
+        scanner.close();
     }
 
     private static void interactiveCommandLine(List<Submission> submissions)
     {
-        InputStreamReader streamReader = new InputStreamReader(System.in);
-        BufferedReader reader = new BufferedReader(streamReader);
-        String input;
+        //InputStreamReader streamReader = new InputStreamReader(System.in);
+        //BufferedReader reader = new BufferedReader(streamReader);
+        Scanner scanner = new Scanner(System.in);
         try
         {
-            while ((input = reader.readLine()) != null)
-                processCommand(submissions, input);
+            while (scanner.hasNextLine())
+                processCommand(submissions, scanner.nextLine());
         } catch (Exception e)
         {
             System.out.println(e.getMessage());
         }
+        scanner.close();
     }
 
     private static void processCommand(List<Submission> submissions, String input)
