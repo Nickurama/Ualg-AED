@@ -1,14 +1,22 @@
+import java.util.Arrays;
 import java.util.Random;
 
 public class App
 {
     public static void main(String[] args) throws Exception
     {
-        Executable exe = () -> waitOneSec();
-        Generator gen = n -> twoSumGenerateExample(n);
-        FunctionTimer functionTimer = new FunctionTimer(exe);
+        Executable<Void> exe = (Void) -> waitOneSec();
+        Generator<Void> gen = (n) -> null;
+        FunctionTimer<Void> functionTimer = new FunctionTimer<Void>(exe, gen);
         functionTimer.startLogging();
-        functionTimer.getAverageCPU(100);
+        //functionTimer.getAverageCPU(1, 100);
+
+        Executable<int[]> exe2 = a -> twoSum(a[0]);
+        Generator<int[]> gen2 = (n) -> new int[][] {twoSumGenerator(n)};
+        FunctionTimer<int[]> functionTimer2 = new FunctionTimer<int[]>(exe2, gen2);
+        functionTimer2.startLogging();
+        //functionTimer2.getAverageCPU(1, 100);
+        functionTimer2.doubledRatioTest(1, 100)
     }
 
     public static void waitOneSec()
@@ -30,7 +38,7 @@ public class App
         return count;
     }
 
-    public static int[] twoSumGenerateExample(int n)
+    public static int[] twoSumGenerator(int n)
     {
         Random r = new Random();
         int[] examples = new int[n];

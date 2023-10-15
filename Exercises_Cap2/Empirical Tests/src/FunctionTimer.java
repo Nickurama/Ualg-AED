@@ -1,17 +1,19 @@
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 
-public class FunctionTimer
+public class FunctionTimer<T>
 {
     private static final int NANO_TO_MILLI_SCALAR = 1000000;
     private static final int NANO_TO_SEC_SCALAR = 1000000000;
 
     private boolean isLogging;
-    private Executable executable;
+    private Executable<T> executable;
+    private Generator<T> generator;
 
-    public FunctionTimer(Executable executable)
+    public FunctionTimer(Executable<T> executable, Generator<T> generator)
     {
         this.executable = executable;
+        this.generator = generator;
         this.isLogging = false;
     }
 
@@ -30,12 +32,14 @@ public class FunctionTimer
         this.isLogging = true;
     }
 
-    // public long doubledRatioTest(Generator gen)
-    // {
-    //     int n = 250;
-    // }
+    public long doubledRatioTest(int numOfTests)
+    {
+        int n = 125;
+        return 0;
+    }
 
-    public long getAverageCPU(int numOfTests)
+
+    public long getAverageCPU(int numOfTests, int testSize)
     {
         long elapsedCPU = 0;
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -43,7 +47,8 @@ public class FunctionTimer
 
         for (int i = 0; i < numOfTests; i++)
         {
-            long executionTime = getExecutionTime(threadMXBean, allThreadIds);
+            T[] testArgs = generator.generate(testSize);
+            long executionTime = getExecutionTime(threadMXBean, allThreadIds, testArgs);
             elapsedCPU += executionTime;
             if (isLogging)
                 printTest(i, numOfTests, executionTime);
@@ -55,12 +60,13 @@ public class FunctionTimer
         return elapsedCPU;
     }
 
-    private long getExecutionTime(ThreadMXBean threadMXBean, long[] allThreadIds)
+    @SafeVarargs
+    private long getExecutionTime(ThreadMXBean threadMXBean, long[] allThreadIds, T... testArgs)
     {
         long startTime, stopTime; // variable initialization before assignemnt to avoid timing accuracy loss
 
         startTime = getCPUTime(threadMXBean, allThreadIds);
-        executable.run();
+        executable.run(testArgs);
         stopTime = getCPUTime(threadMXBean, allThreadIds);
 
         return stopTime - startTime;
@@ -98,13 +104,22 @@ public class FunctionTimer
 }
 
 
-interface Executable
+@SuppressWarnings("unchecked")
+interface Executable<T>
 {
-    public void run();
+    public void run(T... args);
 }
 
 
-interface Generator
+interface Generator<T>
 {
-    public Object generate(int n);
+    public T[] generate(int n);
 }
+
+
+// interface Tester
+// {
+//     public <T> void run(T[] arg);
+
+//     public <T> T[] generate(int n);
+// }
