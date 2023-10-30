@@ -16,13 +16,13 @@ public class App
         FunctionTimer<int[]> functionTimer2 = new FunctionTimer<int[]>(exe2, gen2);
         //functionTimer2.startLogging();
         //functionTimer2.getAverageCPU(1, 100);
-        functionTimer2.doubledRatioTest(1000);
+        //functionTimer2.doubledRatioTest(1000);
 
         Executable<int[]> exe3 = args -> threeSum(args[0]);
         Generator<int[]> gen3 = (n) -> new int[][] {twoSumGenerator(n)};
         FunctionTimer<int[]> functionTimer3 = new FunctionTimer<int[]>(exe3, gen3);
         //functionTimer3.startLogging();
-        //functionTimer3.doubledRatioTest(100);
+        functionTimer3.doubledRatioTest(1000);
     }
 
     public static void waitOneSec()

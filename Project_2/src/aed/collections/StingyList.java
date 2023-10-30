@@ -347,9 +347,14 @@ public class StingyList<T> implements Iterable<T>
 
     public void addAt(int i, T item) throws IndexOutOfBoundsException
     {
-        throwIfInvalidIndex(i);
-        AdjacentAddresses a = getAdjacentAddresses(i);
-        a.add(item);
+        if (i == this.size)
+            add(item);
+        else
+        {
+            throwIfInvalidIndex(i);
+            AdjacentAddresses a = getAdjacentAddresses(i);
+            a.add(item);
+        }
     }
 
     public T removeAt(int i) throws IndexOutOfBoundsException

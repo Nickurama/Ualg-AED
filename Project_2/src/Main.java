@@ -71,7 +71,7 @@ public class Main
         {
 
         }
-        listInts.addAt(2, 0);
+        listInts.addAt(10, 0);
         System.out.println("IsEmpty: " + listInts.isEmpty());
         System.out.println("Size: " + listInts.size());
         Object[] array = listInts.toArray();
