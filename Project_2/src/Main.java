@@ -64,18 +64,19 @@ public class Main
         listInts.add(9);
         listInts.add(10);
 
-        try
-        {
-            listInts.addAt(11, 0);
-        } catch (Exception e)
-        {
+        System.out.println(listInts.get(4));
+        // try
+        // {
+        //     listInts.addAt(11, 0);
+        // } catch (Exception e)
+        // {
 
-        }
-        listInts.addAt(10, 0);
-        System.out.println("IsEmpty: " + listInts.isEmpty());
-        System.out.println("Size: " + listInts.size());
-        Object[] array = listInts.toArray();
-        for (int i = 0; i < array.length; i++)
-            System.out.println(array[i]);
+        // }
+        // listInts.addAt(10, 0);
+        // System.out.println("IsEmpty: " + listInts.isEmpty());
+        // System.out.println("Size: " + listInts.size());
+        // Object[] array = listInts.toArray();
+        // for (int i = 0; i < array.length; i++)
+        //     System.out.println(array[i]);
     }
 }

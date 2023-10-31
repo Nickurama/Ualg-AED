@@ -31,6 +31,25 @@ public class StingyList<T> implements Iterable<T>
             return value;
         }
     }
+    private class AdjacentAddressesSingleton
+    {
+        private AdjacentAddresses adjacentAddresses;
+
+        private AdjacentAddressesSingleton()
+        {
+            adjacentAddresses = null;
+        }
+
+        public AdjacentAddresses getInstance(long startAddr)
+        {
+            if (adjacentAddresses == null)
+                adjacentAddresses = new AdjacentAddresses(startAddr);
+            else
+                adjacentAddresses.reset(startAddr);
+
+            return adjacentAddresses;
+        }
+    }
     private class AdjacentAddresses
     {
         private long previous;
@@ -39,6 +58,11 @@ public class StingyList<T> implements Iterable<T>
         private boolean isReversed;
 
         public AdjacentAddresses(long startAddr) throws IndexOutOfBoundsException
+        {
+            reset(startAddr);
+        }
+
+        public void reset(long startAddr)
         {
             this.previous = NULL;
             this.current = NULL;
@@ -208,12 +232,14 @@ public class StingyList<T> implements Iterable<T>
     private int size;
     private long first;
     private long last;
+    AdjacentAddressesSingleton adjacentSingleton;
 
     public StingyList()
     {
         this.size = 0;
         this.first = NULL;
         this.last = NULL;
+        adjacentSingleton = new AdjacentAddressesSingleton();
     }
 
     public StingyList(long first, long last, int size)
@@ -221,6 +247,7 @@ public class StingyList<T> implements Iterable<T>
         this.size = size;
         this.first = first;
         this.last = last;
+        adjacentSingleton = new AdjacentAddressesSingleton();
     }
 
     // Embora não seja obrigatório, aconselho-vos a implementar estes 3 métodos seguintes, pois o código da StingyList pode
@@ -316,7 +343,8 @@ public class StingyList<T> implements Iterable<T>
 
     private AdjacentAddresses setupAdressesFromIndex(int i) throws IndexOutOfBoundsException
     {
-        return isOnUpperHalf(i) ? new AdjacentAddresses(last) : new AdjacentAddresses(first);
+        //return isOnUpperHalf(i) ? new AdjacentAddresses(last) : new AdjacentAddresses(first);
+        return isOnUpperHalf(i) ? adjacentSingleton.getInstance(last) : adjacentSingleton.getInstance(first);
     }
 
     private boolean isOnUpperHalf(int i)
