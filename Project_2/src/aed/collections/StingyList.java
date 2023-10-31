@@ -71,10 +71,8 @@ public class StingyList<T> implements Iterable<T>
             next();
         }
 
-        public long next()// throws IndexOutOfBoundsException
+        public long next()
         {
-            // if (next == NULL)
-            //     throw new IndexOutOfBoundsException("The next node is null");
             previous = current;
             current = next;
             try
@@ -92,10 +90,13 @@ public class StingyList<T> implements Iterable<T>
             return current != NULL;
         }
 
-        public long previous()// throws IndexOutOfBoundsException
+        public boolean isOutOfBounds()
         {
-            // if (previous == NULL)
-            //     throw new IndexOutOfBoundsException("The previous node is null");
+            return current == NULL;
+        }
+
+        public long previous()
+        {
             next = current;
             current = previous;
             try
@@ -105,7 +106,6 @@ public class StingyList<T> implements Iterable<T>
             {
                 previous = NULL;
             }
-
             return current;
         }
 
@@ -119,7 +119,6 @@ public class StingyList<T> implements Iterable<T>
             long cache = previous;
             previous = next;
             next = cache;
-
             isReversed = !isReversed;
         }
 
@@ -250,25 +249,11 @@ public class StingyList<T> implements Iterable<T>
         adjacentSingleton = new AdjacentAddressesSingleton();
     }
 
-    // Embora não seja obrigatório, aconselho-vos a implementar estes 3 métodos seguintes, pois o código da StingyList pode
-    // ser implementado de forma simples com base nestes métodos.
-
-    // Dado um long que representa o endereço do nó atual (node), e um segundo long que representa o endereço do nó
-    // de onde viemos numa sequência antes de chegar ao nó atual, devolve uma referência para o nó onde queremos ir a seguir.
-    // Este método funciona quer estejamos a "viajar" da esquerda para a direita, ou da direita para a esquerda,
-    // como podemos ver no seguinte diagrama:
-    //       from -- to --> Node -- to --> beyond
-    //       beyond <-- to -- Node <-- to -- from
-    //
     private long getNextAddr(long currentAddr, long previousAddr)
     {
         return UNode.get_prev_next_addr(currentAddr) ^ previousAddr;
     }
 
-    // Atualiza uma das referências do nó (pode ser usado para atualizar o previous ou o next).
-    // Recebe como argumento um endereço para o nó, um endereço para a ligação que queremos atualizar (previous ou next),
-    // e o novo endereço a usar. Se passármos o previous, este método atualiza apenas o ponteiro para o previous
-    // mantendo o ponteiro para o next, e vice-versa.
     private static void updateNodeReference(long nodeAddr, long oldAddr, long newAddr)
     {
         long pointers = UNode.get_prev_next_addr(nodeAddr);
@@ -276,9 +261,6 @@ public class StingyList<T> implements Iterable<T>
         UNode.set_prev_next_addr(nodeAddr, opposite ^ newAddr); // gets a new addres with previous/next + newAddr
     }
 
-    //Atualiza ambas as referências do nó em simultâneo (previous e next). Útil quando queremos atualizar ambas,
-    //e já temos as referências para o novo previous e o novo next. Recebe como argumentos o novo nó previous para o
-    // qual queremos apontar, e o novo nó next para o qual queremos apontar.
     private void updateBothNodeReferences(long nodeAddr, long prevAddr, long nextAddr)
     {
         UNode.set_prev_next_addr(nodeAddr, prevAddr ^ nextAddr);
@@ -306,21 +288,15 @@ public class StingyList<T> implements Iterable<T>
         this.size++;
     }
 
-    public T remove() throws IndexOutOfBoundsException
+    private void throwIfEmpty() throws IndexOutOfBoundsException
     {
-        try
-        {
-            return removeAt(this.size - 1);
-        } catch (IndexOutOfBoundsException e)
-        {
-            throw new IndexOutOfBoundsException("List is empty: " + e.getMessage());
-        }
+        if (isEmpty())
+            throw new IndexOutOfBoundsException("List is empty.");
     }
 
     public T get() throws IndexOutOfBoundsException
     {
-        if (isEmpty())
-            throw new IndexOutOfBoundsException("List is empty.");
+        throwIfEmpty();
         return get(size - 1);
     }
 
@@ -330,6 +306,16 @@ public class StingyList<T> implements Iterable<T>
         return getAdjacentAddresses(i).get();
     }
 
+    public T getSlow(int i) throws IndexOutOfBoundsException
+    {
+        throwIfInvalidIndex(i);
+
+        AdjacentAddresses adjacent = adjacentSingleton.getInstance(first);
+        while (i-- > 0)
+            adjacent.next();
+        return adjacent.get();
+    }
+
     private AdjacentAddresses getAdjacentAddresses(int i) throws IndexOutOfBoundsException
     {
         AdjacentAddresses adjacent = setupAdressesFromIndex(i);
@@ -337,13 +323,14 @@ public class StingyList<T> implements Iterable<T>
 
         while (iterations-- > 0)
             adjacent.next();
+        if (adjacent.isOutOfBounds())
+            throw new IndexOutOfBoundsException("Got out of bounds.");
 
         return adjacent;
     }
 
     private AdjacentAddresses setupAdressesFromIndex(int i) throws IndexOutOfBoundsException
     {
-        //return isOnUpperHalf(i) ? new AdjacentAddresses(last) : new AdjacentAddresses(first);
         return isOnUpperHalf(i) ? adjacentSingleton.getInstance(last) : adjacentSingleton.getInstance(first);
     }
 
@@ -363,16 +350,6 @@ public class StingyList<T> implements Iterable<T>
             throw new IndexOutOfBoundsException("Index " + i + " out of range: " + (this.size - 1));
     }
 
-    public T getSlow(int i) throws IndexOutOfBoundsException
-    {
-        throwIfInvalidIndex(i);
-
-        AdjacentAddresses adjacent = new AdjacentAddresses(first);
-        while (i-- > 0)
-            adjacent.next();
-        return adjacent.get();
-    }
-
     public void addAt(int i, T item) throws IndexOutOfBoundsException
     {
         if (i == this.size)
@@ -380,21 +357,20 @@ public class StingyList<T> implements Iterable<T>
         else
         {
             throwIfInvalidIndex(i);
-            AdjacentAddresses a = getAdjacentAddresses(i);
-            a.add(item);
+            getAdjacentAddresses(i).add(item);
         }
+    }
+
+    public T remove() throws IndexOutOfBoundsException
+    {
+        throwIfEmpty();
+        return removeAt(this.size - 1);
     }
 
     public T removeAt(int i) throws IndexOutOfBoundsException
     {
         throwIfInvalidIndex(i);
-        try
-        {
-            return getAdjacentAddresses(i).remove();
-        } catch (IndexOutOfBoundsException e)
-        {
-            throw new IndexOutOfBoundsException(e.getMessage());
-        }
+        return getAdjacentAddresses(i).remove();
     }
 
     public void reverse()
@@ -414,9 +390,10 @@ public class StingyList<T> implements Iterable<T>
         if (this.size == 0)
             return;
 
-        AdjacentAddresses adjacent = new AdjacentAddresses(this.first);
+        AdjacentAddresses adjacent = adjacentSingleton.getInstance(this.first);
         while (adjacent.hasNext())
             adjacent.remove();
+        adjacent.remove();
     }
 
     public boolean isEmpty()
@@ -435,9 +412,9 @@ public class StingyList<T> implements Iterable<T>
         if (this.size == 0)
             return result;
 
-        Iterator<T> it = iterator();
-        for (int i = 0; i < this.size; i++)
-            result[i] = it.next();
+        int i = 0;
+        for (T item : this)
+            result[i++] = item;
         return result;
     }
 
