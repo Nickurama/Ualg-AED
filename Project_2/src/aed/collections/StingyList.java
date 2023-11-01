@@ -1,6 +1,10 @@
 package aed.collections;
 
 import java.util.Iterator;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import aed.utils.TimeAnalysisUtils;
 
 public class StingyList<T> implements Iterable<T>
 {
@@ -393,7 +397,6 @@ public class StingyList<T> implements Iterable<T>
         AdjacentAddresses adjacent = adjacentSingleton.getInstance(this.first);
         while (adjacent.hasNext())
             adjacent.remove();
-        adjacent.remove();
     }
 
     public boolean isEmpty()
@@ -428,5 +431,69 @@ public class StingyList<T> implements Iterable<T>
     {
         for (T item : this)
             System.out.println(item);
+    }
+
+    public static void main(String[] args)
+    {
+
+        Function<Integer, StingyList<Integer>> exampleGenerator = StingyList::generateExample;
+        Consumer<StingyList<Integer>> get = StingyList::getFunction;
+        Consumer<StingyList<Integer>> getSlow = StingyList::getSlowFunction;
+        Consumer<StingyList<Integer>> reverse = StingyList::reverseFunction;
+
+        example = new StingyList<Integer>();
+        doublingRatioOfAverage(exampleGenerator, get, 16, 1000);
+        example = new StingyList<Integer>();
+        doublingRatioOfAverage(exampleGenerator, getSlow, 16, 1000);
+        example = new StingyList<Integer>();
+        doublingRatioOfAverage(exampleGenerator, reverse, 16, 1000);
+    }
+
+    private static StingyList<Integer> example = new StingyList<Integer>();
+
+    private static void doublingRatioOfAverage(Function<Integer, StingyList<Integer>> generator, Consumer<StingyList<Integer>> function, int iterations, int trials)
+    {
+        int currentComplexity = 125;
+        long lastTime = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            currentComplexity *= 2;
+            //long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials) / currentComplexity;
+            long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials);
+            double doublingRatio = 0;
+            if (lastTime > 0)
+                doublingRatio = (double) currentAverageNano / lastTime;
+
+            System.out.println("n: " + currentComplexity +
+                " | Avg time: " + String.format("%.1f", ((double) currentAverageNano / 1000000)) + "ms / " + currentAverageNano + "ns" +
+                " | r: " + doublingRatio);
+
+            lastTime = currentAverageNano;
+        }
+    }
+
+    private static StingyList<Integer> generateExample(Integer size)
+    {
+        Random r = new Random();
+        while (example.size() < size)
+            example.add(r.nextInt());
+        return example;
+    }
+
+    private static void getFunction(StingyList<Integer> list)
+    {
+        Random r = new Random();
+        list.get(r.nextInt(list.size));
+    }
+
+    private static void getSlowFunction(StingyList<Integer> list)
+    {
+        Random r = new Random();
+        list.getSlow(r.nextInt(list.size));
+    }
+
+    private static void reverseFunction(StingyList<Integer> list)
+    {
+        list.reverse();
     }
 }

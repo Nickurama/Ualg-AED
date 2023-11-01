@@ -1,6 +1,10 @@
 package aed.collections;
 
 import java.util.Iterator;
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import aed.utils.TimeAnalysisUtils;
 
 public class QueueArray<Item> implements Iterable<Item>
 {
@@ -122,8 +126,33 @@ public class QueueArray<Item> implements Iterable<Item>
             System.out.println(i);
     }
 
-    public void main(String[] args)
+    public static void main(String[] args)
     {
-        // TODO: do temporal analysis
+        Function<Integer, QueueArray<Integer>> exampleGenerator = QueueArray::generateExample;
+        Consumer<QueueArray<Integer>> enqueue = QueueArray::enqueueFunction;
+        Consumer<QueueArray<Integer>> dequeue = QueueArray::enqueueFunction;
+
+        TimeAnalysisUtils.runDoublingRatioTest(exampleGenerator, enqueue, 16);
+        TimeAnalysisUtils.runDoublingRatioTest(exampleGenerator, dequeue, 16);
+    }
+
+    private static QueueArray<Integer> generateExample(Integer size)
+    {
+        Random r = new Random();
+        QueueArray<Integer> generatedQueue = new QueueArray<Integer>(size);
+        for (int i = 0; i < size - 1; i++) // has space for one last value to be added
+            generatedQueue.enqueue(r.nextInt());
+        return generatedQueue;
+    }
+
+    private static void enqueueFunction(QueueArray<Integer> queue)
+    {
+        Random r = new Random();
+        queue.enqueue(r.nextInt());
+    }
+
+    private static void dequeueFunction(QueueArray<Integer> queue)
+    {
+        queue.dequeue();
     }
 }

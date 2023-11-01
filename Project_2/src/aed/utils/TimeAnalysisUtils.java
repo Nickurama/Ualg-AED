@@ -6,35 +6,36 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-public class TimeAnalysisUtils {
+public class TimeAnalysisUtils
+{
 
     private static final int DEFAULT_TRIALS = 30;
     private static final int MINIMUM_COMPLEXITY = 125;
 
 
-    public static<T> void runDoublingRatioTest(Function<Integer,T> exampleGenerator, Consumer<T> methodToTest, int iterations)
+    public static <T> void runDoublingRatioTest(Function<Integer, T> exampleGenerator, Consumer<T> methodToTest, int iterations)
     {
-        assert(iterations > 0);
+        assert (iterations > 0);
         int n = MINIMUM_COMPLEXITY;
-        double previousTime = getAverageCPUTime(exampleGenerator,n,methodToTest,DEFAULT_TRIALS);
+        double previousTime = getAverageCPUTime(exampleGenerator, n, methodToTest, DEFAULT_TRIALS);
         System.out.println("complexity\ttime(ms)\testimated r");
         System.out.println(n + "\t" + previousTime + "\t ---");
         double newTime;
         double doublingRatio;
 
 
-        for(int i = 0; i < iterations; i++)
+        for (int i = 0; i < iterations; i++)
         {
             n *= 2;
-            newTime = getAverageCPUTime(exampleGenerator,n,methodToTest,DEFAULT_TRIALS);
-            if(previousTime > 0)
+            newTime = getAverageCPUTime(exampleGenerator, n, methodToTest, DEFAULT_TRIALS);
+            if (previousTime > 0)
             {
-                doublingRatio = newTime/previousTime;
-            }
-            else doublingRatio = 0;
+                doublingRatio = newTime / previousTime;
+            } else
+                doublingRatio = 0;
 
             previousTime = newTime;
-            System.out.println(i + "\t" + newTime + "\t" + doublingRatio);
+            System.out.println(n + "\t" + newTime + "\t" + doublingRatio);
         }
     }
 
@@ -46,7 +47,7 @@ public class TimeAnalysisUtils {
     //@param complexity - the level of complexity used to generate and example
     //@param method - the method for which we want to measure average time, receiving the generated example
     //@param trials - the number of trials
-    public static<T> long getAverageCPUTime(Function<Integer,T> exampleGenerator, int complexity, Consumer<T> method, int trials)
+    public static <T> long getAverageCPUTime(Function<Integer, T> exampleGenerator, int complexity, Consumer<T> method, int trials)
     {
         long startTime;
         long stopTime;
@@ -55,12 +56,12 @@ public class TimeAnalysisUtils {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         long[] allThreadIds = threadMXBean.getAllThreadIds();
 
-        for(int i = 0; i < trials; i++)
+        for (int i = 0; i < trials; i++)
         {
             example = exampleGenerator.apply(complexity);
-            startTime = getCPUTime(threadMXBean,allThreadIds);
+            startTime = getCPUTime(threadMXBean, allThreadIds);
             method.accept(example);
-            stopTime = getCPUTime(threadMXBean,allThreadIds);
+            stopTime = getCPUTime(threadMXBean, allThreadIds);
             elapsedCPU += stopTime - startTime;
         }
 
@@ -81,7 +82,7 @@ public class TimeAnalysisUtils {
     //@param setupMethod - a method that is applied to the initial object and returns the initialized object (or a copy of the object)
     //@param method - the method for which we want to measure average time, receiving the initialized object
     //@param trials - the number of trials
-    public static<T> long getAverageCPUTime(T object, UnaryOperator<T> setupMethod, Consumer<T> method, int trials)
+    public static <T> long getAverageCPUTime(T object, UnaryOperator<T> setupMethod, Consumer<T> method, int trials)
     {
         long startTime;
         long stopTime;
@@ -90,12 +91,12 @@ public class TimeAnalysisUtils {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         long[] allThreadIds = threadMXBean.getAllThreadIds();
 
-        for(int i = 0; i < trials; i++)
+        for (int i = 0; i < trials; i++)
         {
             startingObject = setupMethod.apply(object);
-            startTime = getCPUTime(threadMXBean,allThreadIds);
+            startTime = getCPUTime(threadMXBean, allThreadIds);
             method.accept(startingObject);
-            stopTime = getCPUTime(threadMXBean,allThreadIds);
+            stopTime = getCPUTime(threadMXBean, allThreadIds);
             elapsedCPU += stopTime - startTime;
         }
 
@@ -104,7 +105,7 @@ public class TimeAnalysisUtils {
         return elapsedCPU;
     }
 
-    public static<T> long getAverageCPUTime(T object, UnaryOperator<T> setupMethod, Consumer<T> method)
+    public static <T> long getAverageCPUTime(T object, UnaryOperator<T> setupMethod, Consumer<T> method)
     {
         return getAverageCPUTime(object, setupMethod, method, DEFAULT_TRIALS);
     }
@@ -120,11 +121,11 @@ public class TimeAnalysisUtils {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         long[] allThreadIds = threadMXBean.getAllThreadIds();
 
-        for(int i = 0; i < trials; i++)
+        for (int i = 0; i < trials; i++)
         {
-            startTime = getCPUTime(threadMXBean,allThreadIds);
+            startTime = getCPUTime(threadMXBean, allThreadIds);
             method.run();
-            stopTime = getCPUTime(threadMXBean,allThreadIds);
+            stopTime = getCPUTime(threadMXBean, allThreadIds);
             elapsedCPU += stopTime - startTime;
         }
 
@@ -135,13 +136,14 @@ public class TimeAnalysisUtils {
 
     public static long getAverageCPUTime(Runnable method)
     {
-        return getAverageCPUTime(method,DEFAULT_TRIALS);
+        return getAverageCPUTime(method, DEFAULT_TRIALS);
     }
 
     private static long getCPUTime(ThreadMXBean threadMXBean, long[] allThreadIds)
     {
         long nano = 0;
-        for (long id : allThreadIds) {
+        for (long id : allThreadIds)
+        {
             nano += threadMXBean.getThreadCpuTime(id);
         }
         return nano;
