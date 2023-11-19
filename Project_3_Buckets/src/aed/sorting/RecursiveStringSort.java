@@ -1,6 +1,9 @@
 package aed.sorting;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import aed.utils.TimeAnalysisUtils;
 
 class Limits
 {
@@ -13,11 +16,9 @@ class Limits
 public class RecursiveStringSort extends Sort
 {
     private static final Random R = new Random();
-    private static final int CUTOFF_VALUE = 1;
+    private static final int CUTOFF_VALUE = 10;
 
 
-    //esta implementação base do quicksort é fornecida para que possam comparar o tempo de execução do quicksort
-    //com a vossa implementação do RecursiveStringSort
     public static <T extends Comparable<T>> void quicksort(T[] a)
     {
         qsort(a, 0, a.length - 1);
@@ -153,5 +154,69 @@ public class RecursiveStringSort extends Sort
     public static void fasterSort(String[] a)
     {
         //TODO: implement
+    }
+
+    // ---------- TESTING ----------
+
+    public static void main(String[] args)
+    {
+        Function<Integer, String[]> generator = RecursiveStringSort::generate;
+        Function<Integer, String[]> generatorSameLen = RecursiveStringSort::generateSameLen;
+        Consumer<String[]> qsortTest = RecursiveStringSort::quicksort;
+        Consumer<String[]> sortTest = RecursiveStringSort::sort;
+
+        // Medium Arrays
+        //testTime("qsort", generator, 1000, qsortTest, 100);
+        //testTime("recursiveSort", generator, 1000, sortTest, 100);
+
+        // Big Arrays
+        //testTime("qsort", generator, 1000000, qsortTest, 100);
+        //testTime("recursiveSort", generator, 1000000, sortTest, 100);
+
+        // Doubling Ratio Tests Average
+        //TimeAnalysisUtils.runDoublingRatioTest(generator, sortTest, 16);
+
+        // Doubling Ratio Tests Worse Case
+        TimeAnalysisUtils.runDoublingRatioTest(generatorSameLen, sortTest, 16);
+
+    }
+
+    private static void testTime(String name, Function<Integer, String[]> generator, int complexity, Consumer<String[]> executer, int trials)
+    {
+        long time = TimeAnalysisUtils.getAverageCPUTime(generator, complexity, executer, trials);
+        System.out.println("(n=" + complexity + ") " + name + " time: " + time + "ns | " + (time / 1000000) + "ms");
+    }
+
+    private static String[] generateSameLen(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+        final int len = 1000;
+
+        String[] strings = new String[size];
+        for (int i = 0; i < size; i++)
+        {
+            StringBuilder buffer = new StringBuilder(len);
+            for (int j = 0; j < len; j++)
+                buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+            strings[i] = buffer.toString();
+        }
+        return strings;
+    }
+
+    private static String[] generate(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+        final int maxLen = 1000;
+
+        String[] strings = new String[size];
+        for (int i = 0; i < size; i++)
+        {
+            int len = R.nextInt(maxLen);
+            StringBuilder buffer = new StringBuilder(len);
+            for (int j = 0; j < len; j++)
+                buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+            strings[i] = buffer.toString();
+        }
+        return strings;
     }
 }
