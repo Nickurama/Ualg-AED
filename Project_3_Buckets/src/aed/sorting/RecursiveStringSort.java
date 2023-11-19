@@ -2,7 +2,6 @@ package aed.sorting;
 
 import java.util.*;
 
-// podem alterar esta classe, se quiserem
 class Limits
 {
     char minChar;
@@ -14,6 +13,7 @@ class Limits
 public class RecursiveStringSort extends Sort
 {
     private static final Random R = new Random();
+    private static final int CUTOFF_VALUE = 1;
 
 
     //esta implementação base do quicksort é fornecida para que possam comparar o tempo de execução do quicksort
@@ -61,37 +61,93 @@ public class RecursiveStringSort extends Sort
 
 
 
-    //método de ordenação insertionSort
-    //no entanto este método recebe uma Lista de Strings em vez de um Array de Strings
     public static void insertionSort(List<String> a)
     {
-        for (int i = 2; i < a.size(); i++)
+        int n = a.size();
+        for (int i = 1; i < n; i++)
         {
-            for (int j = 0; j < i; j++)
+            for (int j = i; j > 0; j--)
             {
-
+                if (a.get(j).compareTo(a.get(j - 1)) < 0)
+                {
+                    String cache = a.get(j);
+                    a.set(j, a.get(j - 1));
+                    a.set(j - 1, cache);
+                } else
+                    break;
             }
         }
     }
 
     public static Limits determineLimits(List<String> a, int characterIndex)
     {
-        //TODO implement
+        Limits limits = new Limits();
+        limits.minChar = 0;
+        if (!a.isEmpty() && a.get(0).length() > characterIndex)
+            limits.minChar = a.get(0).charAt(characterIndex);
+        limits.maxChar = 0;
+        limits.maxLength = 0;
 
-        return null;
+        for (String s : a)
+        {
+            char c = 0;
+            if (characterIndex < s.length())
+                c = s.charAt(characterIndex);
+
+            if (c > limits.maxChar)
+                limits.maxChar = c;
+            if (c < limits.minChar)
+                limits.minChar = c;
+            int len = s.length();
+            if (len > limits.maxLength)
+                limits.maxLength = len;
+        }
+
+        return limits;
     }
 
-    //ponto de entrada principal para o vosso algoritmo de ordenação
     public static void sort(String[] a)
     {
         recursive_sort(Arrays.asList(a), 0);
     }
 
 
-    //mas este é que faz o trabalho todo
+    @SuppressWarnings("unchecked")
     public static void recursive_sort(List<String> a, int depth)
     {
-        //TODO: implement
+        if (a.size() <= CUTOFF_VALUE)
+        {
+            insertionSort(a);
+            return;
+        }
+
+        Limits limits = determineLimits(a, depth);
+        int bucketSize = limits.maxChar - limits.minChar + 1;
+        ArrayList<String>[] buckets = (ArrayList<String>[]) new ArrayList[bucketSize];
+        ArrayList<String> ordered = new ArrayList<>();
+        for (String s : a)
+        {
+            if (s.length() > depth)
+            {
+                int index = s.charAt(depth) - limits.minChar;
+                if (buckets[index] == null)
+                    buckets[index] = new ArrayList<String>();
+                buckets[index].add(s);
+            } else
+                ordered.add(s);
+        }
+
+        for (ArrayList<String> bucket : buckets)
+            if (bucket != null)
+                recursive_sort(bucket, depth + 1);
+
+        int index = 0;
+        for (String s : ordered)
+            a.set(index++, s);
+        for (ArrayList<String> bucket : buckets)
+            if (bucket != null)
+                for (String s : bucket)
+                    a.set(index++, s);
     }
 
     public static void fasterSort(String[] a)
