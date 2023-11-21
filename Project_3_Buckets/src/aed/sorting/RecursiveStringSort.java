@@ -162,6 +162,10 @@ public class RecursiveStringSort extends Sort
     {
         Function<Integer, String[]> generator = RecursiveStringSort::generate;
         Function<Integer, String[]> generatorSameLen = RecursiveStringSort::generateSameLen;
+        Function<Integer, String[]> generatorDuplicates = RecursiveStringSort::generateDuplicates;
+        Function<Integer, String[]> generatorDuplicatesLessSymbols = RecursiveStringSort::generateDuplicatesLessSymbols;
+        Function<Integer, String[]> generatorDuplicatesHalfLen = RecursiveStringSort::generateDuplicatesHalfLen;
+        Function<Integer, String[]> generatorLessSymbols = RecursiveStringSort::generateLessSymbols;
         Consumer<String[]> qsortTest = RecursiveStringSort::quicksort;
         Consumer<String[]> sortTest = RecursiveStringSort::sort;
 
@@ -174,10 +178,17 @@ public class RecursiveStringSort extends Sort
         //testTime("recursiveSort", generator, 1000000, sortTest, 100);
 
         // Doubling Ratio Tests Average
+        //System.out.println("Average case tests");
+        //doublingRatioOfAverage(generator, sortTest, 16, 100);
         //TimeAnalysisUtils.runDoublingRatioTest(generator, sortTest, 16);
 
         // Doubling Ratio Tests Worse Case
-        TimeAnalysisUtils.runDoublingRatioTest(generatorSameLen, sortTest, 16);
+        //TimeAnalysisUtils.runDoublingRatioTest(generatorSameLen, sortTest, 16);
+        //TimeAnalysisUtils.runDoublingRatioTest(generatorDuplicates, sortTest, 16);
+        //System.out.println("Worst case tests");
+        //doublingRatioOfAverage(generatorDuplicates, sortTest, 16, 100);
+        System.out.println("Worst case tests half len");
+        doublingRatioOfAverage(generatorDuplicatesHalfLen, sortTest, 16, 100);
 
     }
 
@@ -185,6 +196,89 @@ public class RecursiveStringSort extends Sort
     {
         long time = TimeAnalysisUtils.getAverageCPUTime(generator, complexity, executer, trials);
         System.out.println("(n=" + complexity + ") " + name + " time: " + time + "ns | " + (time / 1000000) + "ms");
+    }
+
+    private static void doublingRatioOfAverage(Function<Integer, String[]> generator, Consumer<String[]> function, int iterations, int trials)
+    {
+        int currentComplexity = 125;
+        long lastTime = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            currentComplexity *= 2;
+            //long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials) / currentComplexity;
+            long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials);
+            double doublingRatio = 0;
+            if (lastTime > 0)
+                doublingRatio = (double) currentAverageNano / lastTime;
+
+            System.out.println("n: " + currentComplexity +
+                " | Avg time: " + String.format("%.1f", ((double) currentAverageNano / 1000000)) + "ms / " + currentAverageNano + "ns" +
+                " | r: " + doublingRatio);
+
+            lastTime = currentAverageNano;
+        }
+    }
+
+    private static String[] generateDuplicatesHalfLen(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+        final int len = 500;
+
+        String[] strings = new String[size];
+        StringBuilder buffer = new StringBuilder(len);
+        for (int j = 0; j < len; j++)
+            buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+        String dup = buffer.toString();
+        for (int i = 0; i < size; i++)
+            strings[i] = dup;
+        return strings;
+    }
+
+    private static String[] generateDuplicatesLessSymbols(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+        final int len = 1000;
+
+        String[] strings = new String[size];
+        StringBuilder buffer = new StringBuilder(len);
+        for (int j = 0; j < len; j++)
+            buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+        String dup = buffer.toString();
+        for (int i = 0; i < size; i++)
+            strings[i] = dup;
+        return strings;
+    }
+
+    private static String[] generateLessSymbols(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+        final int maxLen = 1000;
+
+        String[] strings = new String[size];
+        for (int i = 0; i < size; i++)
+        {
+            int len = 1 + R.nextInt(maxLen);
+            StringBuilder buffer = new StringBuilder(len);
+            for (int j = 0; j < len; j++)
+                buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+            strings[i] = buffer.toString();
+        }
+        return strings;
+    }
+
+    private static String[] generateDuplicates(Integer size)
+    {
+        final char[] possibleChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+        final int len = 1000;
+
+        String[] strings = new String[size];
+        StringBuilder buffer = new StringBuilder(len);
+        for (int j = 0; j < len; j++)
+            buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
+        String dup = buffer.toString();
+        for (int i = 0; i < size; i++)
+            strings[i] = dup;
+        return strings;
     }
 
     private static String[] generateSameLen(Integer size)
@@ -211,7 +305,7 @@ public class RecursiveStringSort extends Sort
         String[] strings = new String[size];
         for (int i = 0; i < size; i++)
         {
-            int len = R.nextInt(maxLen);
+            int len = 1 + R.nextInt(maxLen);
             StringBuilder buffer = new StringBuilder(len);
             for (int j = 0; j < len; j++)
                 buffer.append(possibleChars[R.nextInt(possibleChars.length)]);
