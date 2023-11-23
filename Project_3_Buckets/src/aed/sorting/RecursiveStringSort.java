@@ -187,10 +187,63 @@ public class RecursiveStringSort extends Sort
         //TimeAnalysisUtils.runDoublingRatioTest(generatorDuplicates, sortTest, 16);
         //System.out.println("Worst case tests");
         //doublingRatioOfAverage(generatorDuplicates, sortTest, 16, 100);
-        System.out.println("Worst case tests half len");
-        doublingRatioOfAverage(generatorDuplicatesHalfLen, sortTest, 16, 100);
+        //System.out.println("Worst case tests half len");
+        //doublingRatioOfAverage(generatorDuplicatesHalfLen, sortTest, 16, 100);
 
+        // Memory Tests
+        doublingRatioForMemory(generator, sortTest, 16, 100);
     }
+
+    //spacial tests
+
+    private static void doublingRatioForMemory(Function<Integer, String[]> generator, Consumer<String[]> function, int iterations, int trials)
+    {
+        int currentComplexity = 125;
+        long lastMemory = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            currentComplexity *= 2;
+            long currentAverageMemory = getMemoryUsed(generator, function, currentComplexity, trials);
+            double doublingRatio = 0;
+            if (lastMemory > 0)
+                doublingRatio = (double) currentAverageMemory / lastMemory;
+
+            System.out.println("n: " + currentComplexity +
+                " | Avg memory: " + String.format("%.1f", ((double) currentAverageMemory / 1000000)) + "mb / " + currentAverageMemory + "b" +
+                " | r: " + doublingRatio);
+
+            lastMemory = currentAverageMemory;
+        }
+    }
+
+    private static long getMemoryUsed(Function<Integer, String[]> generator, Consumer<String[]> executer, int complexity, int trials)
+    {
+        long startMemory;
+        long stopMemory;
+        long memoryUsed = 0;
+        String[] example;
+
+        for (int i = 0; i < trials; i++)
+        {
+            example = generator.apply(complexity);
+            System.gc();
+            startMemory = getCurrentMemory();
+            executer.accept(example);
+            stopMemory = getCurrentMemory();
+            if (stopMemory > startMemory) //gc might have been called and memory used can't be negative
+                memoryUsed += stopMemory - startMemory;
+        }
+
+        memoryUsed /= trials;
+        return memoryUsed;
+    }
+
+    private static long getCurrentMemory()
+    {
+        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    }
+
+    // temporal tests
 
     private static void testTime(String name, Function<Integer, String[]> generator, int complexity, Consumer<String[]> executer, int trials)
     {
@@ -205,7 +258,6 @@ public class RecursiveStringSort extends Sort
         for (int i = 0; i < iterations; i++)
         {
             currentComplexity *= 2;
-            //long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials) / currentComplexity;
             long currentAverageNano = TimeAnalysisUtils.getAverageCPUTime(generator, currentComplexity, function, trials);
             double doublingRatio = 0;
             if (lastTime > 0)
