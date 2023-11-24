@@ -1,6 +1,7 @@
 package aed.sorting;
 
-public class Sort {
+public class Sort
+{
 
     protected static <T extends Comparable<T>> boolean less(T v, T w)
     {
@@ -20,7 +21,8 @@ public class Sort {
     {
         for (int i = 1; i < a.length; i++)
         {
-            if (less(a[i],a[i-1])) return false;
+            if (less(a[i], a[i - 1]))
+                return false;
         }
         return true;
     }
