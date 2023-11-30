@@ -49,5 +49,10 @@ public class main
         System.out.print("\"");
         layer0.print(15, 21);
         System.out.print("\"");
+        System.out.println();
+
+        int iteration = 1;
+        int size = 26;
+        System.out.println("loop: " + Math.ceil((double) size / Math.pow(2, iteration)));
     }
 }

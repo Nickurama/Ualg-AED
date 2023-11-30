@@ -1,7 +1,9 @@
 package aed.collections;
 
-import java.util.Iterator;
-import java.util.Stack;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import aed.utils.TimeAnalysisUtils;
 
 public class Cordel implements Iterable<String>
 {
@@ -209,6 +211,99 @@ public class Cordel implements Iterable<String>
 
     public static void main(String[] args)
     {
-        //colocar aqui testes efetuados
+        Function<Integer, String> stringGen = Cordel::stringGenerator;
+        Function<Integer, Cordel> cordelGen = Cordel::cordelGenerator;
+        Function<Integer, Cordel> balancedCordelGen = Cordel::balancedCordelGenerator;
+        Consumer<String> appendJava = Cordel::concatJava;
+        Consumer<Cordel> appendCordel = Cordel::concatCordel;
+        Consumer<String> insertJava = Cordel::insertJava;
+        Consumer<Cordel> insertCordel = Cordel::insertCordel;
+
+
+        //System.out.println("Java string concatenation");
+        //TimeAnalysisUtils.runDoublingRatioTest(stringGen, appendJava, 24);
+        // System.out.println("Cordel string concatenation");
+        // TimeAnalysisUtils.runDoublingRatioTest(cordelGen, appendCordel, 24);
+
+        // System.out.println("Java string insertion");
+        // TimeAnalysisUtils.runDoublingRatioTest(stringGen, insertJava, 24);
+        // System.out.println("Cordel string insertion");
+        // TimeAnalysisUtils.runDoublingRatioTest(cordelGen, insertCordel, 32);
+        //System.out.println("Balanced cordel string insertion");
+        //TimeAnalysisUtils.runDoublingRatioTest(balancedCordelGen, insertCordel, 32);
+    }
+
+    private static Random R = new Random();
+
+    private static String stringGenerator(Integer size)
+    {
+        insertIndex = R.nextInt(size);
+        StringBuilder builder = new StringBuilder(size);
+        for (int i = 0; i < size; i++)
+            builder.append("0");
+        return builder.toString();
+    }
+
+    private static Cordel cordelGenerator(Integer size)
+    {
+        return new Cordel(stringGenerator(size));
+    }
+
+    private static Cordel balancedCordelGenerator(Integer size)
+    {
+        Cordel[] cordeis = new Cordel[size];
+        for (int i = 0; i < size; i++)
+            cordeis[i] = new Cordel("00000000");
+
+        Cordel extra = null;
+        if (size % 2 != 0)
+            extra = cordeis[size - 1];
+        size /= 2;
+
+        while (size > 1)
+        {
+            for (int i = 0; i < size; i++)
+                cordeis[i] = cordeis[2 * i].append(cordeis[2 * i + 1]);
+
+            if (size % 2 != 0)
+            {
+                if (extra == null)
+                    extra = cordeis[size - 1];
+                else
+                    extra = cordeis[size - 1].append(extra);
+            }
+
+            size /= 2;
+        }
+
+        Cordel result = cordeis[0].append(cordeis[1]);
+
+        if (extra != null)
+            result = result.append(extra);
+
+        return result;
+    }
+
+    static String concatString = "111";
+    static int insertIndex;
+
+    private static Cordel concatCordel(Cordel a)
+    {
+        return a.append(concatString);
+    }
+
+    private static Cordel insertCordel(Cordel a)
+    {
+        return a.insertAt(insertIndex, concatString);
+    }
+
+    private static String concatJava(String a)
+    {
+        return a + concatString;
+    }
+
+    private static String insertJava(String a)
+    {
+        return a.substring(0, insertIndex) + concatString + a.substring(insertIndex);
     }
 }
