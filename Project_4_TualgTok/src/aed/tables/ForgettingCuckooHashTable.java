@@ -4,7 +4,7 @@ import java.util.*;
 
 public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, Value>
 {
-    private class Pair
+    private static class Pair<Key, Value>
     {
         public Key key;
         public Value value;
@@ -37,8 +37,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     // worst case scenario for size >= MAX_INSERT_DEPTH is the table looping MAX_INSERT_DEPTH times
     private static final int MAX_INSERT_DEPTH = 10;
 
-    private Pair[] table0;
-    private Pair[] table1;
+    private Pair<Key, Value>[] table0;
+    private Pair<Key, Value>[] table1;
     private List<Key> keyList;
     private int primeIndex;
     private int size;
@@ -47,8 +47,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     public ForgettingCuckooHashTable(int primeIndex)
     {
         this.primeIndex = primeIndex;
-        this.table0 = (Pair[]) new Object[primesTable0[primeIndex]];
-        this.table1 = (Pair[]) new Object[primesTable1[primeIndex]];
+        this.table0 = (Pair<Key, Value>[]) new Pair[primesTable0[primeIndex]];
+        this.table1 = (Pair<Key, Value>[]) new Pair[primesTable1[primeIndex]];
         this.size = 0;
         this.keyList = new LinkedList<Key>();
     }
@@ -84,26 +84,26 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         return table0[hash0(k)] != null || table1[hash1(k)] != null;
     }
 
-
-
     public Value get(Key k)
     {
         Value result = null;
-        Pair p0 = this.table0[hash0(k)];
-        Pair p1 = this.table1[hash1(k)];
-        if (p0 != null)
+        int hash0 = hash0(k);
+        int hash1 = hash1(k);
+        Pair<Key, Value> p0 = this.table0[hash0];
+        Pair<Key, Value> p1 = this.table1[hash1];
+        if (p0 != null && p0.key.equals(k))
             result = p0.value;
-        else if (p1 != null)
+        else if (p1 != null && p1.key.equals(k))
             result = p1.value;
         return result;
     }
 
     public void put(Key k, Value v) throws IllegalArgumentException
     {
-        put(new Pair(k, v));
+        put(new Pair<Key, Value>(k, v));
     }
 
-    private void put(Pair p) throws IllegalArgumentException
+    private void put(Pair<Key, Value> p) throws IllegalArgumentException
     {
         if (p.key == null)
             throw new IllegalArgumentException("key can't be null.");
@@ -114,15 +114,17 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             delete(p.key);
         else
             insert(p);
+
     }
 
-    private void insert(Pair p)
+    private void insert(Pair<Key, Value> p)
     {
         insert0(p, 0);
+        keyList.add(p.key);
     }
 
     //insertKey0 and insertKey1 could be the same function, but at the cost of minor performance
-    private void insert0(Pair pair, int iteration)
+    private void insert0(Pair<Key, Value> pair, int iteration)
     {
         if (iteration >= MAX_INSERT_DEPTH)
         {
@@ -130,27 +132,25 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             iteration = 0;
         }
 
-        int putIndex = hash0(pair.key) % primesTable0[primeIndex];
-
+        int putIndex = hash0(pair.key);
         if (table0[putIndex] == null)
         {
             table0[putIndex] = pair;
-            keyList.add(pair.key);
             this.size++;
         } else
         {
-            Pair oldPair = table0[putIndex];
-            if (pair.key == oldPair.key)
+            Pair<Key, Value> oldPair = table0[putIndex];
+            if (pair.key.equals(oldPair.key))
                 table0[putIndex].value = pair.value;
             else
             {
                 table0[putIndex] = pair;
-                insert1(oldPair, iteration++);
+                insert1(oldPair, ++iteration);
             }
         }
     }
 
-    private void insert1(Pair pair, int iteration)
+    private void insert1(Pair<Key, Value> pair, int iteration)
     {
         if (iteration >= MAX_INSERT_DEPTH)
         {
@@ -162,17 +162,16 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         if (table1[putIndex] == null)
         {
             table1[putIndex] = pair;
-            keyList.add(pair.key);
             this.size++;
         } else
         {
-            Pair oldPair = table1[putIndex];
-            if (pair.key == oldPair.key)
+            Pair<Key, Value> oldPair = table1[putIndex];
+            if (pair.key.equals(oldPair.key))
                 table1[putIndex].value = pair.value;
             else
             {
                 table1[putIndex] = pair;
-                insert0(oldPair, iteration++);
+                insert0(oldPair, ++iteration);
             }
         }
     }
@@ -182,37 +181,43 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         if (this.primeIndex >= primesTable0.length - 1)
             return;
 
-        List<Key> oldKeyList = this.keyList;
-        Pair[] oldTable0 = this.table0;
-        Pair[] oldTable1 = this.table1;
+        List<Pair<Key, Value>> oldKeyPairs = getAllPairs();
         this.primeIndex++;
 
         resetTable();
-        repopulateTable(oldTable0, oldTable1, oldKeyList);
+        repopulateTable(oldKeyPairs);
+    }
+
+    private List<Pair<Key, Value>> getAllPairs()
+    {
+        List<Pair<Key, Value>> keyPairs = new LinkedList<>();
+        for (Key k : this.keyList)
+        {
+            int hash0 = hash0(k);
+            int hash1 = hash1(k);
+            Pair<Key, Value> p0 = table0[hash0];
+            Pair<Key, Value> p1 = table1[hash1];
+            if (p0 != null && p0.key.equals(k))
+                keyPairs.add(p0);
+            else if (p1 != null && p1.key.equals(k))
+                keyPairs.add(p1);
+        }
+        return keyPairs;
     }
 
     @SuppressWarnings("unchecked")
     private void resetTable()
     {
-        this.table0 = (Pair[]) new Object[primesTable0[primeIndex]];
-        this.table1 = (Pair[]) new Object[primesTable1[primeIndex]];
+        this.table0 = (Pair<Key, Value>[]) new Pair[primesTable0[primeIndex]];
+        this.table1 = (Pair<Key, Value>[]) new Pair[primesTable1[primeIndex]];
         this.keyList.clear();
         this.size = 0;
     }
 
-    private void repopulateTable(Pair[] oldTable0, Pair[] oldTable1, List<Key> oldKeyList)
+    private void repopulateTable(List<Pair<Key, Value>> oldKeyPairs)
     {
-        for (Key k : oldKeyList)
-        {
-            int hash0 = hash0(k);
-            int hash1 = hash1(k);
-            Pair p0 = oldTable0[hash0];
-            Pair p1 = oldTable1[hash1];
-            if (p0 != null && p0.key == oldTable0[hash0].key)
-                put(p0);
-            else if (p1 != null && p1.key == oldTable1[hash1].key)
-                put(p1);
-        }
+        for (Pair<Key, Value> pair : oldKeyPairs)
+            put(pair);
     }
 
     private int hash0(Key k)
@@ -229,11 +234,11 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         int hash0 = hash0(k);
         int hash1 = hash1(k);
-        if (table0[hash0] != null && table0[hash0].key == k)
+        if (table0[hash0] != null && table0[hash0].key.equals(k))
         {
             table0[hash0] = null;
             this.size--;
-        } else if (table1[hash1] != null && table1[hash1].key == k)
+        } else if (table1[hash1] != null && table1[hash1].key.equals(k))
         {
             table1[hash1] = null;
             this.size--;
@@ -248,13 +253,11 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         if (this.primeIndex <= 0)
             return;
 
-        List<Key> oldKeyList = this.keyList;
-        Pair[] oldTable0 = this.table0;
-        Pair[] oldTable1 = this.table1;
+        List<Pair<Key, Value>> oldKeyPairs = getAllPairs();
         this.primeIndex--;
 
         resetTable();
-        repopulateTable(oldTable0, oldTable1, oldKeyList);
+        repopulateTable(oldKeyPairs);
     }
 
     public Iterable<Key> keys()
@@ -264,28 +267,39 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     private class KeyIterator implements Iterator<Key>, Iterable<Key>
     {
-        // TODO: implement
+        Iterator<Key> keyListIterator;
+        Key nextValue;
 
         KeyIterator()
         {
-            // TODO: implement
+            keyListIterator = keyList.iterator();
+            updateNextValue();
+        }
+
+        private void updateNextValue()
+        {
+            Key tempNext = null;
+            while (keyListIterator.hasNext() && (tempNext == null || !containsKey(tempNext)))
+                tempNext = keyListIterator.next();
+            nextValue = tempNext;
         }
 
         public boolean hasNext()
         {
-            // TODO: implement
-            return false;
+            return nextValue != null;
         }
 
         public Key next()
         {
-            return null;
-            // TODO: implement
+            Key result = nextValue;
+            updateNextValue();
+            return result;
         }
 
         public void remove()
         {
-            throw new UnsupportedOperationException("Iterator doesn't support removal");
+            delete(nextValue);
+            updateNextValue();
         }
 
         @Override
@@ -316,5 +330,4 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         // TODO: implement
     }
-
 }
