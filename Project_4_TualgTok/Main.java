@@ -6,6 +6,7 @@ public class Main
     public static void main(String[] args)
     {
         ForgettingCuckooHashTable<Integer, String> hashTable = new ForgettingCuckooHashTable<>();
+        hashTable.setSwapLogging(true);
         hashTable.put(2, "Hello");
         hashTable.put(428761, "World");
         hashTable.put(5782477, "this");
@@ -25,6 +26,8 @@ public class Main
         // hashTable.put(12, "4");
         // hashTable.put(13, "4");
 
+        System.out.println(hashTable.getSwapAverage());
+        System.out.println(hashTable.getSwapVariation());
         Iterable<Integer> it = hashTable.keys();
         for (Integer key : it)
             System.out.println(hashTable.get(key));

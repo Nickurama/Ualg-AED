@@ -16,6 +16,53 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         }
     }
 
+    private class Logger
+    {
+        private static final int LOG_SIZE = 100;
+        private boolean isLogging;
+        private int[] swapLog;
+        private int swapLogSize;
+        private int swapLogIndex;
+
+        public Logger()
+        {
+            this.isLogging = false;
+            this.swapLog = new int[LOG_SIZE];
+            this.swapLogSize = 0;
+            this.swapLogIndex = 0;
+        }
+
+        public void log(int i)
+        {
+            swapLog[swapLogIndex++] = i;
+            if (this.swapLogIndex >= LOG_SIZE)
+                this.swapLogIndex -= LOG_SIZE;
+            if (swapLogSize < LOG_SIZE)
+                swapLogSize++;
+        }
+
+        public float getAverage()
+        {
+            int avg = 0;
+            for (int i = 0; i < this.swapLogSize; i++)
+                avg += swapLog[i];
+            if (this.swapLogSize != 0)
+                return (float) avg / (float) this.swapLogSize;
+            return 0;
+        }
+
+        public float getVariance()
+        {
+            float sum = 0;
+            float avg = getAverage();
+            for (int i = 0; i < this.swapLogSize; i++)
+                sum += (float) Math.pow(swapLog[i] - avg, 2);
+            if (this.swapLogSize != 0)
+                return sum / (this.swapLogSize - 1);
+            return 0;
+        }
+    }
+
     private static int[] primesTable0 =
         {
                 7, 17, 37, 79, 163, 331,
@@ -43,6 +90,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     private int primeIndex;
     private int size;
 
+    private Logger logger;
+
     @SuppressWarnings("unchecked")
     public ForgettingCuckooHashTable(int primeIndex)
     {
@@ -51,6 +100,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         this.table1 = (Pair<Key, Value>[]) new Pair[primesTable1[primeIndex]];
         this.size = 0;
         this.keyList = new LinkedList<Key>();
+        this.logger = new Logger();
     }
 
     public ForgettingCuckooHashTable()
@@ -137,6 +187,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         {
             table0[putIndex] = pair;
             this.size++;
+            if (this.logger.isLogging)
+                logger.log(iteration);
         } else
         {
             Pair<Key, Value> oldPair = table0[putIndex];
@@ -163,6 +215,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         {
             table1[putIndex] = pair;
             this.size++;
+            if (this.logger.isLogging)
+                logger.log(iteration);
         } else
         {
             Pair<Key, Value> oldPair = table1[putIndex];
@@ -311,19 +365,17 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     public void setSwapLogging(boolean state)
     {
-        // TODO: implement
+        logger.isLogging = state;
     }
 
     public float getSwapAverage()
     {
-        // TODO: implement
-        return 0.0f;
+        return logger.getAverage();
     }
 
     public float getSwapVariation()
     {
-        // TODO: implement
-        return 0.0f;
+        return logger.getVariance();
     }
 
     public void advanceTime(int hours)
