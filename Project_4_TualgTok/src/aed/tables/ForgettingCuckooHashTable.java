@@ -1,142 +1,320 @@
 package aed.tables;
 
+import java.util.*;
 
-public class ForgettingCuckooHashTable<Key,Value> implements ISymbolTable<Key,Value> {
+public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, Value>
+{
+    private class Pair
+    {
+        public Key key;
+        public Value value;
 
+        public Pair(Key k, Value v)
+        {
+            this.key = k;
+            this.value = v;
+        }
+    }
 
-    private static int[] primesTable0 = {
-            7, 17, 37, 79, 163, 331,
-            673, 1361, 2729, 5471, 10949,
-            21911, 43853, 87719, 175447, 350899,
-            701819, 1403641, 2807303, 5614657,
-            11229331, 22458671, 44917381, 89834777, 179669557
-    };
+    private static int[] primesTable0 =
+        {
+                7, 17, 37, 79, 163, 331,
+                673, 1361, 2729, 5471, 10949,
+                21911, 43853, 87719, 175447, 350899,
+                701819, 1403641, 2807303, 5614657,
+                11229331, 22458671, 44917381, 89834777, 179669557
+        };
 
-    private static int[] primesTable1 = {
-            11, 19, 41, 83, 167, 337,
-            677, 1367, 2731, 5477, 10957,
-            21929, 43867, 87721, 175453, 350941,
-            701837, 1403651, 2807323, 5614673,
-            11229341, 22458677, 44917399, 89834821, 179669563
-    };
+    private static int[] primesTable1 =
+        {
+                11, 19, 41, 83, 167, 337,
+                677, 1367, 2731, 5477, 10957,
+                21929, 43867, 87721, 175453, 350941,
+                701837, 1403651, 2807323, 5614673,
+                11229341, 22458677, 44917399, 89834821, 179669563
+        };
 
+    // worst case scenario for size >= MAX_INSERT_DEPTH is the table looping MAX_INSERT_DEPTH times
+    private static final int MAX_INSERT_DEPTH = 10;
+
+    private Pair[] table0;
+    private Pair[] table1;
+    private List<Key> keyList;
+    private int primeIndex;
+    private int size;
 
     @SuppressWarnings("unchecked")
     public ForgettingCuckooHashTable(int primeIndex)
     {
-        //TODO: implement
+        this.primeIndex = primeIndex;
+        this.table0 = (Pair[]) new Object[primesTable0[primeIndex]];
+        this.table1 = (Pair[]) new Object[primesTable1[primeIndex]];
+        this.size = 0;
+        this.keyList = new LinkedList<Key>();
     }
 
     public ForgettingCuckooHashTable()
     {
-       //TODO: implement
+        this(0);
     }
 
     public int size()
     {
-        //TODO: implement
-		return 0;
+        return this.size;
     }
 
     @Override
-    public boolean isEmpty() {
-        //TODO: implement
-		return true;
+    public boolean isEmpty()
+    {
+        return this.size == 0;
     }
 
     public int getCapacity()
     {
-        //TODO: implement
-		return 0;
+        return primesTable0[primeIndex] + primesTable1[primeIndex];
     }
 
     public float getLoadFactor()
     {
-        //TODO: implement
-		return 0.0f;
+        return (float) this.size() / (float) this.getCapacity();
     }
-
 
     public boolean containsKey(Key k)
     {
-       
-		//TODO: implement
-        return false;
+        return table0[hash0(k)] != null || table1[hash1(k)] != null;
     }
+
+
 
     public Value get(Key k)
     {
-        //TODO: implement
-		return null;
+        Value result = null;
+        Pair p0 = this.table0[hash0(k)];
+        Pair p1 = this.table1[hash1(k)];
+        if (p0 != null)
+            result = p0.value;
+        else if (p1 != null)
+            result = p1.value;
+        return result;
     }
 
-    public void put(Key k, Value v)
+    public void put(Key k, Value v) throws IllegalArgumentException
     {
-        //TODO: implement
+        put(new Pair(k, v));
     }
-    
+
+    private void put(Pair p) throws IllegalArgumentException
+    {
+        if (p.key == null)
+            throw new IllegalArgumentException("key can't be null.");
+        if (getLoadFactor() >= 0.5)
+            resizeUp();
+
+        if (p.value == null)
+            delete(p.key);
+        else
+            insert(p);
+    }
+
+    private void insert(Pair p)
+    {
+        insert0(p, 0);
+    }
+
+    //insertKey0 and insertKey1 could be the same function, but at the cost of minor performance
+    private void insert0(Pair pair, int iteration)
+    {
+        if (iteration >= MAX_INSERT_DEPTH)
+        {
+            resizeUp();
+            iteration = 0;
+        }
+
+        int putIndex = hash0(pair.key) % primesTable0[primeIndex];
+
+        if (table0[putIndex] == null)
+        {
+            table0[putIndex] = pair;
+            keyList.add(pair.key);
+            this.size++;
+        } else
+        {
+            Pair oldPair = table0[putIndex];
+            if (pair.key == oldPair.key)
+                table0[putIndex].value = pair.value;
+            else
+            {
+                table0[putIndex] = pair;
+                insert1(oldPair, iteration++);
+            }
+        }
+    }
+
+    private void insert1(Pair pair, int iteration)
+    {
+        if (iteration >= MAX_INSERT_DEPTH)
+        {
+            resizeUp();
+            iteration = 0;
+        }
+
+        int putIndex = hash1(pair.key);
+        if (table1[putIndex] == null)
+        {
+            table1[putIndex] = pair;
+            keyList.add(pair.key);
+            this.size++;
+        } else
+        {
+            Pair oldPair = table1[putIndex];
+            if (pair.key == oldPair.key)
+                table1[putIndex].value = pair.value;
+            else
+            {
+                table1[putIndex] = pair;
+                insert0(oldPair, iteration++);
+            }
+        }
+    }
+
+    private void resizeUp()
+    {
+        if (this.primeIndex >= primesTable0.length - 1)
+            return;
+
+        List<Key> oldKeyList = this.keyList;
+        Pair[] oldTable0 = this.table0;
+        Pair[] oldTable1 = this.table1;
+        this.primeIndex++;
+
+        resetTable();
+        repopulateTable(oldTable0, oldTable1, oldKeyList);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resetTable()
+    {
+        this.table0 = (Pair[]) new Object[primesTable0[primeIndex]];
+        this.table1 = (Pair[]) new Object[primesTable1[primeIndex]];
+        this.keyList.clear();
+        this.size = 0;
+    }
+
+    private void repopulateTable(Pair[] oldTable0, Pair[] oldTable1, List<Key> oldKeyList)
+    {
+        for (Key k : oldKeyList)
+        {
+            int hash0 = hash0(k);
+            int hash1 = hash1(k);
+            Pair p0 = oldTable0[hash0];
+            Pair p1 = oldTable1[hash1];
+            if (p0 != null && p0.key == oldTable0[hash0].key)
+                put(p0);
+            else if (p1 != null && p1.key == oldTable1[hash1].key)
+                put(p1);
+        }
+    }
+
+    private int hash0(Key k)
+    {
+        return (k.hashCode() & 0x7fffffff) % primesTable0[primeIndex];
+    }
+
+    private int hash1(Key k)
+    {
+        return ((31 * k.hashCode()) & 0x7fffffff) % primesTable1[primeIndex];
+    }
 
     public void delete(Key k)
     {
-        //TODO: implement
+        int hash0 = hash0(k);
+        int hash1 = hash1(k);
+        if (table0[hash0] != null && table0[hash0].key == k)
+        {
+            table0[hash0] = null;
+            this.size--;
+        } else if (table1[hash1] != null && table1[hash1].key == k)
+        {
+            table1[hash1] = null;
+            this.size--;
+        }
+
+        if (getLoadFactor() < 0.125)
+            resizeDown();
     }
 
-    public Iterable<Key> keys() {
+    private void resizeDown()
+    {
+        if (this.primeIndex <= 0)
+            return;
+
+        List<Key> oldKeyList = this.keyList;
+        Pair[] oldTable0 = this.table0;
+        Pair[] oldTable1 = this.table1;
+        this.primeIndex--;
+
+        resetTable();
+        repopulateTable(oldTable0, oldTable1, oldKeyList);
+    }
+
+    public Iterable<Key> keys()
+    {
         return new KeyIterator();
     }
 
-    private class KeyIterator implements Iterator<Key>,Iterable<Key>
+    private class KeyIterator implements Iterator<Key>, Iterable<Key>
     {
-        //TODO: implement
+        // TODO: implement
 
         KeyIterator()
         {
-            //TODO: implement
+            // TODO: implement
         }
 
-        public boolean hasNext() {
-			//TODO: implement
-			return false;
+        public boolean hasNext()
+        {
+            // TODO: implement
+            return false;
         }
 
-        public Key next() {
+        public Key next()
+        {
             return null;
-			//TODO: implement
+            // TODO: implement
         }
 
-        public void remove() {
+        public void remove()
+        {
             throw new UnsupportedOperationException("Iterator doesn't support removal");
         }
 
         @Override
-        public Iterator<Key> iterator() {
+        public Iterator<Key> iterator()
+        {
             return this;
         }
     }
 
-
-
     public void setSwapLogging(boolean state)
     {
-		//TODO: implement
+        // TODO: implement
     }
 
     public float getSwapAverage()
     {
-        //TODO: implement
-		return 0.0f;
+        // TODO: implement
+        return 0.0f;
     }
 
     public float getSwapVariation()
     {
-        //TODO: implement
-		return 0.0f;
+        // TODO: implement
+        return 0.0f;
     }
 
     public void advanceTime(int hours)
     {
-        //TODO: implement
+        // TODO: implement
     }
-
 
 }
