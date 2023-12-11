@@ -1,9 +1,13 @@
 package aed.tables;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, Value>
 {
+    private static final Random R = new Random();
+
     private static class Pair<Key, Value>
     {
         public Key key;
@@ -157,6 +161,9 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         if (p.key == null)
             throw new IllegalArgumentException("key can't be null.");
+        if (generatesInfiniteLoop(p.key))
+            System.out.println("infinite loop detected :3");
+        // throw new IllegalArgumentException("There were 3 keys with the same hash");
         if (getLoadFactor() >= 0.5)
             resizeUp();
 
@@ -167,10 +174,17 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     }
 
+    private boolean generatesInfiniteLoop(Key k)
+    {
+        Pair<Key, Value> p0 = table0[hash0(k)];
+        Pair<Key, Value> p1 = table1[hash1(k)];
+        return p0 != null && p0.key != k && hash0(p0.key) == hash0(k) &&
+            p1 != null && p1.key != k && hash0(p1.key) == hash0(k);
+    }
+
     private void insert(Pair<Key, Value> p)
     {
         insert0(p, 0);
-        keyList.add(p.key);
     }
 
     //insertKey0 and insertKey1 could be the same function, but at the cost of minor performance
@@ -181,6 +195,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             resizeUp();
             iteration = 0;
         }
+        if (iteration == 0)
+            keyList.add(pair.key);
 
         int putIndex = hash0(pair.key);
         if (table0[putIndex] == null)
@@ -381,5 +397,27 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     public void advanceTime(int hours)
     {
         // TODO: implement
+    }
+
+    public static void main(String[] args)
+    {
+        // testing hashing function
+        ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
+        hashTable.setSwapLogging(true);
+        fillTable(hashTable, 100000);
+        printStatistics(hashTable);
+        System.out.println("Finished.");
+    }
+
+    private static void fillTable(ForgettingCuckooHashTable<Integer, Integer> hashTable, int size)
+    {
+        for (int i = 0; i < size; i++)
+            hashTable.put(R.nextInt(), R.nextInt());
+    }
+
+    private static void printStatistics(ForgettingCuckooHashTable<Integer, Integer> hashTable)
+    {
+        System.out.println(hashTable.getSwapAverage());
+        System.out.println(hashTable.getSwapVariation());
     }
 }
