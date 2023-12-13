@@ -6,17 +6,18 @@ import java.util.function.Function;
 
 public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, Value>
 {
-    private static final Random R = new Random();
 
     private static class Pair<Key, Value>
     {
         public Key key;
         public Value value;
+        public int time;
 
-        public Pair(Key k, Value v)
+        public Pair(Key k, Value v, int currentTime)
         {
             this.key = k;
             this.value = v;
+            this.time = currentTime;
         }
     }
 
@@ -86,13 +87,15 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         };
 
     // worst case scenario for size >= MAX_INSERT_DEPTH is the table looping MAX_INSERT_DEPTH times
-    private static final int MAX_INSERT_DEPTH = 10;
+    private static final int MAX_INSERT_DEPTH = 100;
+    private static final int FORGET_TIME_LIMIT = 24;
 
     private Pair<Key, Value>[] table0;
     private Pair<Key, Value>[] table1;
     private List<Key> keyList;
     private int primeIndex;
     private int size;
+    private int internalTimeHours;
 
     private Logger logger;
 
@@ -105,6 +108,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         this.size = 0;
         this.keyList = new LinkedList<Key>();
         this.logger = new Logger();
+        this.internalTimeHours = 0;
     }
 
     public ForgettingCuckooHashTable()
@@ -135,7 +139,10 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     public boolean containsKey(Key k)
     {
-        return table0[hash0(k)] != null || table1[hash1(k)] != null;
+        int hash0 = hash0(k);
+        int hash1 = hash1(k);
+        return table0[hash0] != null && table0[hash0].key.equals(k) ||
+            table1[hash1] != null && table1[hash1].key.equals(k);
     }
 
     public Value get(Key k)
@@ -145,16 +152,23 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         int hash1 = hash1(k);
         Pair<Key, Value> p0 = this.table0[hash0];
         Pair<Key, Value> p1 = this.table1[hash1];
+
         if (p0 != null && p0.key.equals(k))
+        {
             result = p0.value;
-        else if (p1 != null && p1.key.equals(k))
+            this.table0[hash0].time = this.internalTimeHours;
+        } else if (p1 != null && p1.key.equals(k))
+        {
             result = p1.value;
+            this.table1[hash1].time = this.internalTimeHours;
+        }
+
         return result;
     }
 
     public void put(Key k, Value v) throws IllegalArgumentException
     {
-        put(new Pair<Key, Value>(k, v));
+        put(new Pair<Key, Value>(k, v, this.internalTimeHours));
     }
 
     private void put(Pair<Key, Value> p) throws IllegalArgumentException
@@ -162,13 +176,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         if (p.key == null)
             throw new IllegalArgumentException("key can't be null.");
         if (generatesInfiniteLoop(p.key))
-            System.out.println("infinite loop detected :3");
-        // throw new IllegalArgumentException("There were 3 keys with the same hash");
+            throw new IllegalArgumentException("This table doesn't support 3 objects with same hash");
         if (getLoadFactor() >= 0.5)
             resizeUp();
 
         if (p.value == null)
             delete(p.key);
+        else if (containsKey(p.key))
+            update(p.key, p.value);
         else
             insert(p);
 
@@ -178,8 +193,25 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         Pair<Key, Value> p0 = table0[hash0(k)];
         Pair<Key, Value> p1 = table1[hash1(k)];
-        return p0 != null && p0.key != k && hash0(p0.key) == hash0(k) &&
-            p1 != null && p1.key != k && hash0(p1.key) == hash0(k);
+        return p0 != null && k.hashCode() == p0.key.hashCode() &&
+            p1 != null && k.hashCode() == p1.key.hashCode();
+    }
+
+    private void update(Key k, Value v)
+    {
+        int hash0 = hash0(k);
+        int hash1 = hash1(k);
+        Pair<Key, Value> p0 = table0[hash0];
+        Pair<Key, Value> p1 = table1[hash1];
+        if (p0 != null && p0.key.equals(k))
+        {
+            table0[hash0].value = v;
+            table0[hash0].time = this.internalTimeHours;
+        } else if (p1 != null && p1.key.equals(k))
+        {
+            table1[hash1].value = v;
+            table1[hash1].time = this.internalTimeHours;
+        }
     }
 
     private void insert(Pair<Key, Value> p)
@@ -199,22 +231,18 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             keyList.add(pair.key);
 
         int putIndex = hash0(pair.key);
-        if (table0[putIndex] == null)
+        if (table0[putIndex] == null) // insertion
         {
             table0[putIndex] = pair;
             this.size++;
             if (this.logger.isLogging)
                 logger.log(iteration);
-        } else
+        } else // collision (can't be update)
         {
             Pair<Key, Value> oldPair = table0[putIndex];
-            if (pair.key.equals(oldPair.key))
-                table0[putIndex].value = pair.value;
-            else
-            {
-                table0[putIndex] = pair;
+            table0[putIndex] = pair;
+            if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
                 insert1(oldPair, ++iteration);
-            }
         }
     }
 
@@ -225,24 +253,22 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             resizeUp();
             iteration = 0;
         }
+        if (iteration == 0)
+            keyList.add(pair.key);
 
         int putIndex = hash1(pair.key);
-        if (table1[putIndex] == null)
+        if (table1[putIndex] == null) // insertion
         {
             table1[putIndex] = pair;
             this.size++;
             if (this.logger.isLogging)
                 logger.log(iteration);
-        } else
+        } else // collision (can't be update)
         {
             Pair<Key, Value> oldPair = table1[putIndex];
-            if (pair.key.equals(oldPair.key))
-                table1[putIndex].value = pair.value;
-            else
-            {
-                table1[putIndex] = pair;
+            table1[putIndex] = pair;
+            if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
                 insert0(oldPair, ++iteration);
-            }
         }
     }
 
@@ -330,6 +356,11 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         repopulateTable(oldKeyPairs);
     }
 
+    private int getDeltaTime(int oldTime)
+    {
+        return Math.abs(this.internalTimeHours - oldTime);
+    }
+
     public Iterable<Key> keys()
     {
         return new KeyIterator();
@@ -337,20 +368,38 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     private class KeyIterator implements Iterator<Key>, Iterable<Key>
     {
+        List<Key> iteratedKeys;
         Iterator<Key> keyListIterator;
+        Key oldValue;
         Key nextValue;
 
         KeyIterator()
         {
             keyListIterator = keyList.iterator();
+            this.oldValue = null;
+            this.nextValue = null;
+            this.iteratedKeys = new ArrayList<>();
             updateNextValue();
         }
 
         private void updateNextValue()
         {
             Key tempNext = null;
-            while (keyListIterator.hasNext() && (tempNext == null || !containsKey(tempNext)))
+            while (keyListIterator.hasNext())
+            {
                 tempNext = keyListIterator.next();
+                if (iteratedKeys.contains(tempNext))
+                {
+                    tempNext = null;
+                    continue;
+                }
+                if (containsKey(tempNext))
+                {
+                    iteratedKeys.add(tempNext);
+                    break;
+                } else
+                    tempNext = null;
+            }
             nextValue = tempNext;
         }
 
@@ -361,14 +410,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
         public Key next()
         {
-            Key result = nextValue;
+            this.oldValue = this.nextValue;
             updateNextValue();
-            return result;
+            return this.oldValue;
         }
 
         public void remove()
         {
-            delete(nextValue);
+            delete(this.oldValue);
             updateNextValue();
         }
 
@@ -396,18 +445,17 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     public void advanceTime(int hours)
     {
-        // TODO: implement
+        this.internalTimeHours += hours;
     }
 
     public static void main(String[] args)
     {
         // testing hashing function
-        ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
-        hashTable.setSwapLogging(true);
-        fillTable(hashTable, 100000);
-        printStatistics(hashTable);
-        System.out.println("Finished.");
+        for (int i = 50; i < 10000; i += 50)
+            printAvgStats(i, 10000);
     }
+
+    private static final Random R = new Random();
 
     private static void fillTable(ForgettingCuckooHashTable<Integer, Integer> hashTable, int size)
     {
@@ -415,9 +463,31 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             hashTable.put(R.nextInt(), R.nextInt());
     }
 
-    private static void printStatistics(ForgettingCuckooHashTable<Integer, Integer> hashTable)
+    private static void printAvgStats(int complexity, int trials)
     {
-        System.out.println(hashTable.getSwapAverage());
-        System.out.println(hashTable.getSwapVariation());
+        double avgAverage = 0;
+        double avgVariance = 0;
+
+        int progress = 0;
+        final int frequency = 10;
+        for (int i = 0; i < trials; i++)
+        {
+            if (((double) i / trials) * 100 - progress >= frequency)
+            {
+                progress += frequency;
+                // System.out.println(progress + "% completed...");
+            }
+            ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
+            hashTable.setSwapLogging(true);
+            fillTable(hashTable, complexity);
+            avgAverage += hashTable.getSwapAverage();
+            avgVariance += hashTable.getSwapVariation();
+        }
+        avgAverage /= trials;
+        avgVariance /= trials;
+
+        System.out.println("Stats for complexity of " + complexity + " with " + trials + " trials.");
+        System.out.println("Average: " + String.format("%.2f", avgAverage));
+        System.out.println("Variance: " + String.format("%.2f", avgVariance));
     }
 }
