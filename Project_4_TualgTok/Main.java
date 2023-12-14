@@ -33,11 +33,49 @@ public class Main
 
         Iterable<String> it = hashTable.keys();
         Iterator<String> iter = it.iterator();
-        while (iter.hasNext())
+        for (int i = 0; i < 77500 && iter.hasNext(); i++)
         {
             iter.next();
             iter.remove();
         }
+
+        System.out.println("Size (after deletion):");
+        hashTable.printDeepSize();
+
+        return;
+
+        // second wave
+        // for (int i = 0; i < 200000; i++)
+        //     keys[i] = CuckooHashTableTests.generateRandomString(15);
+
+        // for (int i = 0; i < 200000; i++)
+        // {
+        //     if (i % 1000 == 0)
+        //     {
+        //         hashTable.advanceTime(1);
+        //         for (int j = 0; j < 10; j++)
+        //             hashTable.get(keys[j]);
+        //     }
+        //     hashTable.put(keys[i], R.nextInt());
+        // }
+
+
+
+        // System.out.println("Size 2 (before deletion):");
+        // hashTable.printDeepSize();
+
+        // it = hashTable.keys();
+        // iter = it.iterator();
+        // for (int i = 0; i < 10000 && iter.hasNext(); i++)
+        // {
+        //     iter.next();
+        //     iter.remove();
+        // }
+
+        // System.out.println("Size 2 (after deletion):");
+        // hashTable.printDeepSize();
+
+
 
         // System.out.println("Size (after 1 deletion):");
         // hashTable.printDeepSize();
@@ -50,8 +88,6 @@ public class Main
         //     iter.remove();
         // }
 
-        System.out.println("Size (after deletion):");
-        hashTable.printDeepSize();
         // System.out.println(strs[0] + ": " + hashTable.get(strs[0]));
         // System.out.println(strs[100] + ": " + hashTable.get(strs[100]));
         // System.out.println(strs[1000] + ": " + hashTable.get(strs[1000]));
@@ -248,7 +284,6 @@ public class Main
             if (related.size() >= 4)
                 printList(related);
         }
-
     }
 
     private static void printList(List<Integer> list)

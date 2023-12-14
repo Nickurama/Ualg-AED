@@ -95,6 +95,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     private int primeIndex;
     private int size;
     private int internalTimeHours;
+    private boolean isResizing;
 
     private Logger logger;
 
@@ -108,6 +109,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         this.keyList = new LinkedList<Key>();
         this.logger = new Logger();
         this.internalTimeHours = 0;
+        this.isResizing = false;
     }
 
     public ForgettingCuckooHashTable()
@@ -192,9 +194,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         Pair<Key, Value> p0 = table0[hash0(k)];
         Pair<Key, Value> p1 = table1[hash1(k)];
-        return p0 != null && k.hashCode() == p0.key.hashCode() && getDeltaTime(p0.time) < FORGET_TIME_LIMIT &&
-            p1 != null && k.hashCode() == p1.key.hashCode() && getDeltaTime(p1.time) < FORGET_TIME_LIMIT &&
+        return p0 != null && k.hashCode() == p0.key.hashCode() && !hasExpired(p0) &&
+            p1 != null && k.hashCode() == p1.key.hashCode() && !hasExpired(p1) &&
             p0.key != k && p1.key != k;
+    }
+
+    private boolean hasExpired(Pair<Key, Value> p)
+    {
+        return getDeltaTime(p.time) >= FORGET_TIME_LIMIT;
     }
 
     private void update(Key k, Value v)
@@ -241,10 +248,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         {
             Pair<Key, Value> oldPair = table0[putIndex];
             table0[putIndex] = pair;
-            if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
+            if (!this.isResizing)
+            {
+                if (!hasExpired(oldPair))
+                    insert1(oldPair, ++iteration);
+                else
+                    logger.log(iteration); // means a key was inserted aswell
+            } else
                 insert1(oldPair, ++iteration);
-            else
-                logger.log(iteration); // means a key was inserted aswell
         }
     }
 
@@ -269,10 +280,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         {
             Pair<Key, Value> oldPair = table1[putIndex];
             table1[putIndex] = pair;
-            if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
+            if (!this.isResizing)
+            {
+                if (!hasExpired(oldPair))
+                    insert0(oldPair, ++iteration);
+                else
+                    logger.log(iteration); // means a key was inserted aswell
+            } else
                 insert0(oldPair, ++iteration);
-            else
-                logger.log(iteration); // means a key was inserted aswell
         }
     }
 
@@ -284,8 +299,10 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         List<Pair<Key, Value>> oldKeyPairs = getAllPairs();
         this.primeIndex++;
 
+        this.isResizing = true;
         resetTable();
         repopulateTable(oldKeyPairs);
+        this.isResizing = false;
     }
 
     private List<Pair<Key, Value>> getAllPairs()
@@ -359,8 +376,10 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         List<Pair<Key, Value>> oldKeyPairs = getAllPairs();
         this.primeIndex--;
 
+        this.isResizing = true;
         resetTable();
         repopulateTable(oldKeyPairs);
+        this.isResizing = false;
     }
 
     private int getDeltaTime(int oldTime)
@@ -464,14 +483,14 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         int outdatedSize = 0;
         for (int i = 0; i < table0.length; i++)
             if (table0[i] != null)
-                if (getDeltaTime(table0[i].time) < FORGET_TIME_LIMIT)
+                if (!hasExpired(table0[i]))
                     validSize++;
                 else
                     outdatedSize++;
 
         for (int i = 0; i < table1.length; i++)
             if (table1[i] != null)
-                if (getDeltaTime(table1[i].time) < FORGET_TIME_LIMIT)
+                if (!hasExpired(table1[i]))
                     validSize++;
                 else
                     outdatedSize++;
