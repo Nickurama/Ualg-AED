@@ -1,5 +1,7 @@
 package aed.tables;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -63,7 +65,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             for (int i = 0; i < this.swapLogSize; i++)
                 sum += (float) Math.pow(swapLog[i] - avg, 2);
             if (this.swapLogSize != 0)
-                return sum / (this.swapLogSize - 1);
+                return sum / (this.swapLogSize); // -1
             return 0;
         }
     }
@@ -89,6 +91,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     // worst case scenario for size >= MAX_INSERT_DEPTH is the table looping MAX_INSERT_DEPTH times
     private static final int MAX_INSERT_DEPTH = 100;
     private static final int FORGET_TIME_LIMIT = 24;
+    private static final float RESIZE_THRESHOLD = 0.5f;
 
     private Pair<Key, Value>[] table0;
     private Pair<Key, Value>[] table1;
@@ -177,7 +180,7 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             throw new IllegalArgumentException("key can't be null.");
         if (generatesInfiniteLoop(p.key))
             throw new IllegalArgumentException("This table doesn't support 3 objects with same hash");
-        if (getLoadFactor() >= 0.5)
+        if (getLoadFactor() >= RESIZE_THRESHOLD)
             resizeUp();
 
         if (p.value == null)
@@ -243,6 +246,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             table0[putIndex] = pair;
             if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
                 insert1(oldPair, ++iteration);
+            else
+                logger.log(iteration); // means a key was inserted aswell
         }
     }
 
@@ -269,6 +274,8 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
             table1[putIndex] = pair;
             if (getDeltaTime(oldPair.time) < FORGET_TIME_LIMIT)
                 insert0(oldPair, ++iteration);
+            else
+                logger.log(iteration); // means a key was inserted aswell
         }
     }
 
@@ -312,8 +319,11 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
 
     private void repopulateTable(List<Pair<Key, Value>> oldKeyPairs)
     {
+        boolean wasLogging = logger.isLogging;
+        setSwapLogging(false);
         for (Pair<Key, Value> pair : oldKeyPairs)
             put(pair);
+        setSwapLogging(wasLogging);
     }
 
     private int hash0(Key k)
@@ -451,8 +461,24 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     public static void main(String[] args)
     {
         // testing hashing function
-        for (int i = 50; i < 10000; i += 50)
-            printAvgStats(i, 10000);
+        // for (int i = 50; i <= 12000; i += 50)
+        //     printAvgStats(i, 10000);
+
+        // testing forget mechanism
+        // for (int i = 2550; i <= 12000; i += 50)
+        //     printAvgStatsForgetting(i, 10000, 20);
+
+        // doubling ratio tests for put()
+        // doublingRatioPut(15, 250, 30);
+
+        // doubling ratio tests for get()
+        // doublingRatioGet(15, 250, 100000);
+
+        // doubling ratio tests for put() on a linear probing hashtable
+        // doublingRatioPutLinear(15, 250, 30);
+
+        // doubling ratio tests for get() on a linear probing hashtable
+        // doublingRatioGetLinear(15, 250, 100000);
     }
 
     private static final Random R = new Random();
@@ -461,6 +487,16 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
     {
         for (int i = 0; i < size; i++)
             hashTable.put(R.nextInt(), R.nextInt());
+    }
+
+    private static Integer[] fillTableFromArray(ForgettingCuckooHashTable<Integer, Integer> hashTable, int size)
+    {
+        Integer[] ints = new Integer[size];
+        for (int i = 0; i < size; i++)
+            ints[i] = R.nextInt();
+        for (int i = 0; i < size; i++)
+            hashTable.put(ints[i], R.nextInt());
+        return ints;
     }
 
     private static void printAvgStats(int complexity, int trials)
@@ -486,8 +522,330 @@ public class ForgettingCuckooHashTable<Key, Value> implements ISymbolTable<Key, 
         avgAverage /= trials;
         avgVariance /= trials;
 
-        System.out.println("Stats for complexity of " + complexity + " with " + trials + " trials.");
-        System.out.println("Average: " + String.format("%.2f", avgAverage));
-        System.out.println("Variance: " + String.format("%.2f", avgVariance));
+        System.out.print(complexity + ",");
+        System.out.print(String.format("%.2f", avgAverage) + ",");
+        System.out.println(String.format("%.2f", avgVariance));
+        // System.out.println("Stats for complexity of " + complexity + " with " + trials + " trials.");
+        // System.out.println("Average: " + String.format("%.2f", avgAverage));
+        // System.out.println("Variance: " + String.format("%.2f", avgVariance));
+    }
+
+    private static void printAvgStatsForgetting(int complexity, int trials, int chanceToRemember)
+    {
+        double avgAverage = 0;
+        double avgVariance = 0;
+
+        int progress = 0;
+        final int frequency = 10;
+        for (int i = 0; i < trials; i++)
+        {
+            if (((double) i / trials) * 100 - progress >= frequency)
+            {
+                progress += frequency;
+                // System.out.println(progress + "% completed...");
+            }
+
+            ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
+            hashTable.setSwapLogging(true);
+            fillTableRemember(hashTable, complexity, chanceToRemember);
+            avgAverage += hashTable.getSwapAverage();
+            avgVariance += hashTable.getSwapVariation();
+        }
+        avgAverage /= trials;
+        avgVariance /= trials;
+
+        System.out.print(complexity + ",");
+        System.out.print(String.format("%.2f", avgAverage) + ",");
+        System.out.println(String.format("%.2f", avgVariance));
+        // System.out.println("Stats for complexity of " + complexity + " with " + trials + " trials.");
+        // System.out.println("Average: " + String.format("%.2f", avgAverage));
+        // System.out.println("Variance: " + String.format("%.2f", avgVariance));
+    }
+
+    private static void fillTableRemember(ForgettingCuckooHashTable<Integer, Integer> hashTable, int size, int chanceToRemember)
+    {
+        List<Integer> remember = new ArrayList<Integer>();
+
+        for (int i = 0; i < size; i++)
+        {
+            if (i % 23 == 0)
+                visitAllRememberKeys(hashTable, remember);
+            hashTable.advanceTime(1);
+
+            Integer key = R.nextInt();
+            hashTable.put(key, R.nextInt());
+
+            int chance = R.nextInt(100) + 1;
+            if (chance <= chanceToRemember)
+                remember.add(key);
+        }
+    }
+
+    private static void visitAllRememberKeys(ForgettingCuckooHashTable<Integer, Integer> hashTable, List<Integer> remember)
+    {
+        for (Integer key : remember)
+            hashTable.get(key);
+    }
+
+    private static void doublingRatioPut(int iterations, int complexity, int trials)
+    {
+        long timeElapsed = 0;
+        long lastTimeElapsed = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            for (int j = 0; j < trials; j++)
+            {
+                ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
+                fillTable(hashTable, complexity);
+                long startTime = System.nanoTime();
+                hashTable.put(R.nextInt(), R.nextInt());
+                long stopTime = System.nanoTime();
+                timeElapsed += stopTime - startTime;
+            }
+            timeElapsed /= trials;
+            double doublingRatio = 0;
+            if (lastTimeElapsed > 0)
+                doublingRatio = (double) timeElapsed / lastTimeElapsed;
+            lastTimeElapsed = timeElapsed;
+
+            System.out.println("n: " + complexity +
+                " | Avg time: " + String.format("%.1f", ((double) timeElapsed / 1000000)) + "ms / " + timeElapsed + "ns" +
+                " | r: " + doublingRatio);
+
+            complexity *= 2;
+        }
+    }
+
+    private static void doublingRatioGet(int iterations, int complexity, int trials)
+    {
+        long timeElapsed = 0;
+        long lastTimeElapsed = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            ForgettingCuckooHashTable<Integer, Integer> hashTable = new ForgettingCuckooHashTable<>();
+            Integer[] ints = fillTableFromArray(hashTable, complexity);
+            for (int j = 0; j < trials; j++)
+            {
+                long startTime = System.nanoTime();
+                hashTable.get(ints[R.nextInt(ints.length)]);
+                long stopTime = System.nanoTime();
+                timeElapsed += stopTime - startTime;
+            }
+            timeElapsed /= trials;
+            double doublingRatio = 0;
+            if (lastTimeElapsed > 0)
+                doublingRatio = (double) timeElapsed / lastTimeElapsed;
+            lastTimeElapsed = timeElapsed;
+
+            System.out.println("n: " + complexity +
+                " | Avg time: " + String.format("%.1f", ((double) timeElapsed / 1000000)) + "ms / " + timeElapsed + "ns" +
+                " | r: " + doublingRatio);
+
+            complexity *= 2;
+        }
+    }
+
+    private static void doublingRatioPutLinear(int iterations, int complexity, int trials)
+    {
+        long timeElapsed = 0;
+        long lastTimeElapsed = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            for (int j = 0; j < trials; j++)
+            {
+                OpenAdressingHashTable<Integer, Integer> hashTable = new OpenAdressingHashTable<>();
+                fillTableLinear(hashTable, complexity);
+                long startTime = System.nanoTime();
+                hashTable.put(R.nextInt(), R.nextInt());
+                long stopTime = System.nanoTime();
+                timeElapsed += stopTime - startTime;
+            }
+            timeElapsed /= trials;
+            double doublingRatio = 0;
+            if (lastTimeElapsed > 0)
+                doublingRatio = (double) timeElapsed / lastTimeElapsed;
+            lastTimeElapsed = timeElapsed;
+
+            System.out.println("n: " + complexity +
+                " | Avg time: " + String.format("%.1f", ((double) timeElapsed / 1000000)) + "ms / " + timeElapsed + "ns" +
+                " | r: " + doublingRatio);
+
+            complexity *= 2;
+        }
+    }
+
+    private static void doublingRatioGetLinear(int iterations, int complexity, int trials)
+    {
+        long timeElapsed = 0;
+        long lastTimeElapsed = 0;
+        for (int i = 0; i < iterations; i++)
+        {
+            OpenAdressingHashTable<Integer, Integer> hashTable = new OpenAdressingHashTable<>();
+            Integer[] ints = fillTableFromArrayLinear(hashTable, complexity);
+            for (int j = 0; j < trials; j++)
+            {
+                long startTime = System.nanoTime();
+                hashTable.get(ints[R.nextInt(ints.length)]);
+                long stopTime = System.nanoTime();
+                timeElapsed += stopTime - startTime;
+            }
+            timeElapsed /= trials;
+            double doublingRatio = 0;
+            if (lastTimeElapsed > 0)
+                doublingRatio = (double) timeElapsed / lastTimeElapsed;
+            lastTimeElapsed = timeElapsed;
+
+            System.out.println("n: " + complexity +
+                " | Avg time: " + String.format("%.1f", ((double) timeElapsed / 1000000)) + "ms / " + timeElapsed + "ns" +
+                " | r: " + doublingRatio);
+
+            complexity *= 2;
+        }
+    }
+
+    private static void fillTableLinear(OpenAdressingHashTable<Integer, Integer> hashTable, int size)
+    {
+        for (int i = 0; i < size; i++)
+            hashTable.put(R.nextInt(), R.nextInt());
+    }
+
+    private static Integer[] fillTableFromArrayLinear(OpenAdressingHashTable<Integer, Integer> hashTable, int size)
+    {
+        Integer[] ints = new Integer[size];
+        for (int i = 0; i < size; i++)
+            ints[i] = R.nextInt();
+        for (int i = 0; i < size; i++)
+            hashTable.put(ints[i], R.nextInt());
+        return ints;
+    }
+
+    private static class OpenAdressingHashTable<Key, Value>
+    {
+        private static final float RESIZE_THRESHOLD_LINEAR = 0.5f;
+        private static int[] primes = {
+                17, 37, 79, 163, 331, 673, 1361, 2729, 5471, 10949, 21911,
+                43853, 87719, 175447, 350899, 701819, 1403641, 2807303,
+                5614657, 11229331, 22458671, 44917381, 89834777, 179669557};
+        private int m;
+        private int primeIndex;
+        private int size;
+        private float loadFactor;
+        private Key[] keys;
+        private Value[] values;
+
+        @SuppressWarnings("unchecked")
+        private OpenAdressingHashTable(int primeIndex)
+        {
+            this.primeIndex = primeIndex;
+            this.m = this.primes[primeIndex];
+            this.size = 0;
+            this.loadFactor = 0;
+            this.keys = (Key[]) new Object[this.m];
+            this.values = (Value[]) new Object[this.m];
+        }
+
+        public OpenAdressingHashTable()
+        {
+            this(0);
+        }
+
+        private int hash(Key k)
+        {
+            return (k.hashCode() & 0x7fffffff) % this.m;
+        }
+
+        public Value get(Key k)
+        {
+            for (int i = hash(k); this.keys[i] != null; i = (i + 1) % this.m)
+            {
+                //key was found, return its value
+                if (this.keys[i].equals(k))
+                {
+                    return this.values[i];
+                }
+            }
+            return null;
+        }
+
+        public void put(Key k, Value v)
+        {
+            if (this.loadFactor >= RESIZE_THRESHOLD_LINEAR)
+            {
+                resize(this.primeIndex + 1);
+            }
+            int i = hash(k);
+            for (; this.keys[i] != null; i = (i + 1) % this.m)
+            {
+                //key was found, update its value
+                if (this.keys[i].equals(k))
+                {
+                    this.values[i] = v;
+                    return;
+                }
+            }
+            //we've found the right insertion position, insert
+            this.keys[i] = k;
+            this.values[i] = v;
+            this.size++;
+            this.loadFactor = this.size / this.m;
+        }
+
+        private void resize(int primeIndex)
+        {
+            //if invalid size do not resize;
+            if (primeIndex < 0 || primeIndex >= primes.length)
+                return;
+            this.primeIndex = primeIndex;
+            OpenAdressingHashTable<Key, Value> aux =
+                new OpenAdressingHashTable<Key, Value>(this.primeIndex);
+            //place all existing keys in new table
+            for (int i = 0; i < this.m; i++)
+            {
+                if (keys[i] != null)
+                    aux.put(keys[i], values[i]);
+            }
+            this.keys = aux.keys;
+            this.values = aux.values;
+            this.m = aux.m;
+            this.loadFactor = this.size / this.m;
+        }
+
+        private void delete(Key k)
+        {
+            int i = hash(k);
+            while (true)
+            {
+                //no key to delete, return
+                if (this.keys[i] == null)
+                    return;
+                //if key was found, exit the loop
+                if (this.keys[i].equals(k))
+                    break;
+                i = (i + 1) % this.m;
+            }
+            //delete the key and value
+            this.keys[i] = null;
+            this.values[i] = null;
+            this.size--;
+            //we need to reenter any subsequent keys
+            i = (i + 1) % this.m;
+            while (this.keys[i] != null)
+            {
+                Key auxKey = this.keys[i];
+                Value auxValue = this.values[i];
+                //remove from previous position
+                this.keys[i] = null;
+                this.values[i] = null;
+                //temporarily reduce size,
+                //next put will increment it
+                this.size--;
+                //add the key and value again
+                this.put(auxKey, auxValue);
+                i = (i + 1) % this.m;
+            }
+            this.loadFactor = this.size / this.m;
+            if (this.loadFactor < 0.125f)
+                resize(this.primeIndex - 1);
+        }
     }
 }
