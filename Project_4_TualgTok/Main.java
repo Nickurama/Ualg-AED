@@ -7,83 +7,111 @@ public class Main
     {
         Random R = new Random();
         ForgettingCuckooHashTable<String, Integer> hashTable = new ForgettingCuckooHashTable<>();
-        String[] strs = new String[500000];
+        String[] keys = new String[500000];
         for (int i = 0; i < 500000; i++)
-            strs[i] = CuckooHashTableTests.generateRandomString(15);
-        // strs[0] = "AaAa";
-        // strs[1] = "BBBB";
-        for (int i = 0; i < 500000; i++)
-        {
-            if (i % 1000 == 0)
-            {
-                hashTable.advanceTime(20);
-                for (int j = 0; j < 1000; j++)
-                    hashTable.get(strs[j]);
-            }
-            hashTable.put(strs[i], R.nextInt());
-        }
+            keys[i] = CuckooHashTableTests.generateRandomString(15);
 
-        System.out.println("Size: " + hashTable.size());
-        System.out.println(strs[0] + ": " + hashTable.get(strs[0]));
-        System.out.println(strs[100] + ": " + hashTable.get(strs[100]));
-        System.out.println(strs[1000] + ": " + hashTable.get(strs[1000]));
-        System.out.println(strs[10000] + ": " + hashTable.get(strs[10000]));
-        System.out.println(strs[100000] + ": " + hashTable.get(strs[100000]));
 
-        System.out.println("Contains outdated key?: " + hashTable.containsKey(strs[1000]));
-        hashTable.delete(strs[1000]);
-
-        hashTable.put(strs[100], 100);
-        System.out.println("Capacity: " + hashTable.getCapacity());
-        System.out.println("Load: " + hashTable.getLoadFactor());
-        System.out.println("after put, " + strs[100] + ": " + hashTable.get(strs[100]));
-
-        System.out.println("Size: " + hashTable.size());
-        int realSize = 0;
-        for (int i = 0; i < 500000; i++)
-            if (hashTable.get(strs[i]) != null)
-                realSize++;
-        System.out.println("real size: " + realSize);
-
-        System.out.println("--------------------------");
-
-        String[] strs2 = new String[500000];
-        for (int i = 0; i < 500000; i++)
-            strs2[i] = CuckooHashTableTests.generateRandomString(15);
         for (int i = 0; i < 500000; i++)
         {
             if (i % 1000 == 0)
             {
                 hashTable.advanceTime(20);
-                for (int j = 0; j < 1000; j++)
-                    hashTable.get(strs2[j]);
+                for (int j = 0; j < 10; j++)
+                    hashTable.get(keys[j]);
             }
-            hashTable.put(strs2[i], R.nextInt());
+            hashTable.put(keys[i], R.nextInt());
+        }
+        hashTable.advanceTime(20);
+        for (int j = 0; j < 10; j++)
+            hashTable.get(keys[j]);
+        hashTable.advanceTime(20);
+
+
+        System.out.println("Size (before deletion):");
+        hashTable.printDeepSize();
+
+        Iterable<String> it = hashTable.keys();
+        Iterator<String> iter = it.iterator();
+        while (iter.hasNext())
+        {
+            iter.next();
+            iter.remove();
         }
 
-        System.out.println("Size: " + hashTable.size());
-        System.out.println(strs2[0] + ": " + hashTable.get(strs2[0]));
-        System.out.println(strs2[100] + ": " + hashTable.get(strs2[100]));
-        System.out.println(strs2[1000] + ": " + hashTable.get(strs2[1000]));
-        System.out.println(strs2[10000] + ": " + hashTable.get(strs2[10000]));
-        System.out.println(strs2[100000] + ": " + hashTable.get(strs2[100000]));
+        // System.out.println("Size (after 1 deletion):");
+        // hashTable.printDeepSize();
 
-        System.out.println("Contains outdated key?: " + hashTable.containsKey(strs2[1000]));
+        // it = hashTable.keys();
+        // iter = it.iterator();
+        // while (iter.hasNext())
+        // {
+        //     iter.next();
+        //     iter.remove();
+        // }
 
-        hashTable.put(strs2[100], 100);
-        System.out.println("Capacity: " + hashTable.getCapacity());
-        System.out.println("Load: " + hashTable.getLoadFactor());
-        System.out.println("after put, " + strs2[100] + ": " + hashTable.get(strs2[100]));
+        System.out.println("Size (after deletion):");
+        hashTable.printDeepSize();
+        // System.out.println(strs[0] + ": " + hashTable.get(strs[0]));
+        // System.out.println(strs[100] + ": " + hashTable.get(strs[100]));
+        // System.out.println(strs[1000] + ": " + hashTable.get(strs[1000]));
+        // System.out.println(strs[10000] + ": " + hashTable.get(strs[10000]));
+        // System.out.println(strs[100000] + ": " + hashTable.get(strs[100000]));
 
-        System.out.println("Size: " + hashTable.size());
-        realSize = 0;
-        for (int i = 0; i < 500000; i++)
-            if (hashTable.containsKey(strs[i]))
-                realSize++;
-        for (int i = 0; i < 500000; i++)
-            if (hashTable.containsKey(strs2[i]))
-                realSize++;
-        System.out.println("real size: " + realSize);
+        // System.out.println("Contains outdated key?: " + hashTable.containsKey(strs[1000]));
+        // hashTable.delete(strs[1000]);
+
+        // hashTable.put(strs[100], 100);
+        // System.out.println("Capacity: " + hashTable.getCapacity());
+        // System.out.println("Load: " + hashTable.getLoadFactor());
+        // System.out.println("after put, " + strs[100] + ": " + hashTable.get(strs[100]));
+
+        // System.out.println("Size: " + hashTable.size());
+        // int realSize = 0;
+        // for (int i = 0; i < 500000; i++)
+        //     if (hashTable.get(strs[i]) != null)
+        //         realSize++;
+        // System.out.println("real size: " + realSize);
+
+        // System.out.println("--------------------------");
+
+        // String[] strs2 = new String[500000];
+        // for (int i = 0; i < 500000; i++)
+        //     strs2[i] = CuckooHashTableTests.generateRandomString(15);
+        // for (int i = 0; i < 500000; i++)
+        // {
+        //     if (i % 1000 == 0)
+        //     {
+        //         hashTable.advanceTime(20);
+        //         for (int j = 0; j < 1000; j++)
+        //             hashTable.get(strs2[j]);
+        //     }
+        //     hashTable.put(strs2[i], R.nextInt());
+        // }
+
+        // System.out.println("Size: " + hashTable.size());
+        // System.out.println(strs2[0] + ": " + hashTable.get(strs2[0]));
+        // System.out.println(strs2[100] + ": " + hashTable.get(strs2[100]));
+        // System.out.println(strs2[1000] + ": " + hashTable.get(strs2[1000]));
+        // System.out.println(strs2[10000] + ": " + hashTable.get(strs2[10000]));
+        // System.out.println(strs2[100000] + ": " + hashTable.get(strs2[100000]));
+
+        // System.out.println("Contains outdated key?: " + hashTable.containsKey(strs2[1000]));
+
+        // hashTable.put(strs2[100], 100);
+        // System.out.println("Capacity: " + hashTable.getCapacity());
+        // System.out.println("Load: " + hashTable.getLoadFactor());
+        // System.out.println("after put, " + strs2[100] + ": " + hashTable.get(strs2[100]));
+
+        // System.out.println("Size: " + hashTable.size());
+        // realSize = 0;
+        // for (int i = 0; i < 500000; i++)
+        //     if (hashTable.containsKey(strs[i]))
+        //         realSize++;
+        // for (int i = 0; i < 500000; i++)
+        //     if (hashTable.containsKey(strs2[i]))
+        //         realSize++;
+        // System.out.println("real size: " + realSize);
 
         // hashTable.put(new String("ABC"), 10);
         // hashTable.put("Xpto", 189);
@@ -169,6 +197,34 @@ public class Main
         //     System.out.println(hashTable.get(key));
 
         // // getSameH();
+
+        // ForgettingCuckooHashTable<Integer, String> hashTable = new ForgettingCuckooHashTable<>();
+        // hashTable.put(10004, "Hello0");
+        // hashTable.put(10081, "Hello1");
+        // hashTable.put(10158, "Hello2");
+        // hashTable.put(10235, "Hello3");
+        // hashTable.put(428761, "World");
+        // hashTable.delete(428761);
+        // hashTable.delete(10235);
+        // hashTable.delete(10158);
+        // hashTable.delete(10081);
+        // hashTable.delete(10004);
+        // hashTable.put(5782477, "this");
+        // hashTable.put(-9794747, "is");
+        // hashTable.put(835683, "my");
+        // hashTable.put(2858, "cutie");
+        // hashTable.put(46932596, "patootie");
+        // hashTable.put(3, "hash");
+        // hashTable.put(4, "table");
+        // hashTable.put(5, "OwO");
+        // hashTable.put(6, "1");
+        // hashTable.put(7, "2");
+        // hashTable.put(8, "3");
+        // hashTable.put(9, "4");
+        // hashTable.put(10, "4");
+        // hashTable.put(11, "4");
+        // hashTable.put(12, "4");
+        // hashTable.put(13, "4");
     }
 
     private static void getSameH()
