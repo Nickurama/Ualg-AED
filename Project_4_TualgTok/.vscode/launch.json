@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ForgettingCuckooHashTable",
+            "request": "launch",
+            "mainClass": "aed.tables.ForgettingCuckooHashTable",
+            "projectName": "Project_4_TualgTok_2f248711"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
